@@ -406,6 +406,23 @@
     border-radius: 2px;
   }
 
+  /* Same-group overlap bracket: two blocks from the SAME group overlapping
+     in the same lane are never a real conflict -- teams (especially
+     football) hold a room continuously across their stay and use it for
+     several named sub-activities that overlap on paper without ever
+     needing the physical space at the same moment. Spans the full UNION
+     of the overlapping pair (not just the intersection, unlike the red
+     conflict hatch) so it reads as "this whole span is one team's
+     continuous hold," not a narrow collision window. Bold outline only,
+     no fill, so both blocks' own labels/colors stay fully legible. */
+  .same-group-overlap-bracket {
+    position: absolute;
+    z-index: 5;
+    pointer-events: none;
+    border: 2px solid var(--gold-bright);
+    border-radius: 4px;
+  }
+
   /* --- Past-event fade --- */
   .block.is-past {
     opacity: 0.7;
@@ -1163,6 +1180,7 @@
     <div class="legend-item"><span class="legend-swatch past"></span> <span data-i18n="legend_past">Already past (live clock)</span></div>
     <div class="legend-item"><span class="legend-swatch rev" style="background:var(--red)"></span> <span data-i18n="legend_rev">REV — changed since original BEO</span></div>
     <div class="legend-item no-print-hide"><span>🚩</span> <span data-i18n="legend_red_flag">Open question — revised BEO expected</span></div>
+    <div class="legend-item"><span class="legend-swatch" style="background:transparent; border:2px solid var(--gold-bright);"></span> <span data-i18n="legend_same_group">Same group, not a conflict — one team's continuous room hold</span></div>
   </div>
   <div class="warning-note" data-i18n="warning_note">⚠ Amber hatch = flip window sales booked is shorter than what this setup realistically needs (kept distinct from the red/pink overlap and conflict markers below). Faded blocks have already happened, based on the current time.</div>
   <div class="unassigned-note no-print-hide" id="unassignedNote"></div>
@@ -1313,6 +1331,7 @@ const I18N = {
     amenities_guests: "{n} guests",
     red_flag_title: "Open question — a revised BEO is expected to settle this (see the flag note on hover)",
     legend_red_flag: "Open question — revised BEO expected",
+    legend_same_group: "Same group, not a conflict — one team's continuous room hold",
     note_saved: "Saved.",
     note_cleared: "Cleared.",
     all_notes_btn: "All Notes",
@@ -1387,6 +1406,7 @@ const I18N = {
     amenities_guests: "{n} invitados",
     red_flag_title: "Pregunta abierta — se espera que un BEO revisado la resuelva (vea la nota al pasar el cursor)",
     legend_red_flag: "Pregunta abierta — se espera un BEO revisado",
+    legend_same_group: "Mismo grupo, no es un conflicto — uso continuo de la sala por un mismo equipo",
     note_saved: "Guardado.",
     note_cleared: "Borrado.",
     all_notes_btn: "Todas las notas",
@@ -2480,10 +2500,22 @@ function renderRooms() {
             if (a.ev === b.ev) continue;
             const s = Math.max(a.start, b.start), e = Math.min(a.end, b.end);
             if (s < e) {
+              const sameGroup = a.ev.group && a.ev.group === b.ev.group;
               const ov = document.createElement('div');
-              ov.className = 'overlap-underlay';
-              ov.style.left = pct(s) + '%';
-              ov.style.width = Math.max(pct(e) - pct(s), 0.3) + '%';
+              if (sameGroup) {
+                // Not a real conflict -- one client's continuous room hold
+                // covering several named sub-activities. Brackets the full
+                // UNION of the pair (not just the overlap window), bold
+                // outline only, so it reads as "grouped," not "collision."
+                const us = Math.min(a.start, b.start), ue = Math.max(a.end, b.end);
+                ov.className = 'same-group-overlap-bracket';
+                ov.style.left = pct(us) + '%';
+                ov.style.width = Math.max(pct(ue) - pct(us), 0.3) + '%';
+              } else {
+                ov.className = 'overlap-underlay';
+                ov.style.left = pct(s) + '%';
+                ov.style.width = Math.max(pct(e) - pct(s), 0.3) + '%';
+              }
               ov.style.top = laneTop[kind] + 'px';
               ov.style.height = (rowCounts[kind] * ROW_PITCH) + 'px';
               track.appendChild(ov);
