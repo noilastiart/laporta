@@ -311,6 +311,20 @@
   }
 
   .block-banquet { background: var(--banquet); }
+  /* Only used on a Setup/banquet block whose event has no Live phase at all
+     (e.g. an overnight "Flip" hold) -- the label row that block would
+     otherwise never get, since normally the adjacent Live block carries the
+     name. Light text (not the dark text .block-live uses), since this sits
+     on --banquet's darker green rather than --live's lighter blue. */
+  .block-banquet-labeled {
+    color: var(--text);
+    font-weight: 700;
+    font-size: 9px;
+    display: flex;
+    align-items: center;
+    padding-left: 6px;
+    letter-spacing: 0.2px;
+  }
   .block-av { background: var(--av); }
   .block-live {
     background: var(--live);
@@ -1077,6 +1091,7 @@
     .room-label { font-size: 11px; color: #141a21; }
     .room-sqft { color: #888; }
     .block-banquet { background: #4f8f7d !important; }
+    .block-banquet-labeled { color: #141a21 !important; font-size: 8px; }
     .block-av { background: #6b7fd4 !important; }
     .block-live { background: var(--gold) !important; color: #141a21 !important; font-size: 8px; }
     .block-flip { background: repeating-linear-gradient(45deg,#c8d4de,#c8d4de 3px,#a8b8c5 3px,#a8b8c5 6px) !important; border: 1px dashed #5a6b7d; color: #2a3a4a !important; }
@@ -2468,11 +2483,23 @@ function renderRooms() {
         // The flag lives on the Live block's label when there is one; otherwise on
         // the first block the event has (Setup, then AV).
         const hasLiveBlock = ev.liveStart != null && ev.liveEnd != null;
-        const redFlagAbsHere = !!ev.redFlag && !hasLiveBlock && kind === (hasBanquetBlock ? 'banquet' : 'av');
+        // The red flag rides on whichever block actually has a label row to put
+        // it in: Live if there is one, otherwise the now-labeled Setup/banquet
+        // block (see the label fix below). Only falls back to the floating
+        // "Abs" badge when neither exists (an AV-only event) and there is no
+        // label row anywhere to embed it in.
+        const redFlagAbsHere = !!ev.redFlag && !hasLiveBlock && !hasBanquetBlock && kind === 'av';
         if (kind === 'banquet') {
-          addBlock(track, 'block-banquet', item.start, item.end, {
+          // Setup/build phases normally show no inline text -- the same-event
+          // Live block right after carries the name, so labeling both would
+          // be redundant clutter. But an event with NO live phase at all
+          // (e.g. an overnight "Flip" hold) has no other block to carry its
+          // name -- left blank, an isolated one stretches to fill the whole
+          // track height with nothing to say what it is. Label only those.
+          addBlock(track, 'block-banquet' + (hasLiveBlock ? '' : ' block-banquet-labeled'), item.start, item.end, {
             layer: 'banquet', tooltipTitle: `${t('layer_banquet')} — ${td(ev.label)}`, rev, flags: tdFlags, notes: setupNotesHtml(ev),
-            redFlagAbs: redFlagAbsHere,
+            redFlagAbs: redFlagAbsHere, redFlag: !!ev.redFlag,
+            showLabel: !hasLiveBlock, labelText: hasLiveBlock ? undefined : td(ev.label) + (ev.set ? ` (${ev.set})` : ''),
             groupName: ev.group, conflict: hasConflict, conflictNote: td(ev.conflictNote), top, height,
             diagramKey: ev.diagramKey, eventDate: day.date, eventCategory: ev.eventCategory,
             eveningSetup: ev.eveningSetup, eveningSetupNote: td(ev.eveningSetupNote), noteKey
