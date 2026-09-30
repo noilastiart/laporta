@@ -1161,6 +1161,20 @@
     .group-legend { color: #444; }
     .hour-label { color: #666; }
 
+    /* Month view: same light/dark-text palette as the rest of print, so it
+       doesn't come out as a dark page full of blue. Group color dots are
+       inline styles and print as-is -- that's the one place color survives,
+       intentionally, so groups stay distinguishable on paper. */
+    .month-view-header { color: #141a21; }
+    .month-weekday { color: #666; }
+    .month-cell { background: #fff; border: 1px solid #a8b8c5; }
+    .month-cell.empty-cell { background: transparent; border-color: transparent; }
+    .month-cell.is-today { border-color: var(--gold); border-width: 2px; }
+    .month-daynum { color: #666; }
+    .month-cell.is-today .month-daynum { color: #141a21; }
+    .month-cell-group { color: #141a21; }
+    .month-cell-count { color: #555; }
+
     /* --- Run sheet (printable day view): the modal is a screen-only preview
        shell. On any print, hide it by default; only when print-runsheet mode
        is active, show it with its chrome stripped so the page content flows
@@ -1210,7 +1224,7 @@
 
 <div class="day-tabs no-print-hide" id="dayTabs"></div>
 
-<div class="month-view no-print-hide" id="monthViewContainer" style="display:none;"></div>
+<div class="month-view" id="monthViewContainer" style="display:none;"></div>
 
 <div class="group-legend" id="groupLegend"></div>
 
