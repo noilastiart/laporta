@@ -1054,6 +1054,58 @@
   .amenity-card li { margin-bottom: 5px; line-height: 1.5; }
   .amenity-card li strong { color: var(--text); }
 
+  /* Monthly calendar view (v1) -- group name + Set headcount per day,
+     October only for now, no navigation, no click-through. */
+  .month-view { margin: 4px 0 24px; }
+  .month-view-header {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gold-bright);
+    margin-bottom: 12px;
+  }
+  .month-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .month-weekday {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-bottom: 4px;
+  }
+  .month-cell {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    min-height: 92px;
+    min-width: 0;
+    overflow: hidden;
+    padding: 6px 8px;
+  }
+  .month-cell.empty-cell { background: transparent; border-color: transparent; }
+  .month-cell.is-today { border-color: var(--gold-bright); }
+  .month-daynum { font-size: 12px; color: var(--text-dim); margin-bottom: 5px; }
+  .month-cell.is-today .month-daynum { color: var(--gold-bright); font-weight: 700; }
+  .month-cell-group {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    font-size: 11px;
+    line-height: 1.55;
+    color: var(--text);
+  }
+  .month-cell-dot {
+    width: 7px;
+    height: 7px;
+    min-width: 7px;
+    border-radius: 50%;
+  }
+  .month-cell-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .month-cell-count { color: var(--text-dim); margin-left: auto; padding-left: 4px; white-space: nowrap; }
+
   /* Inline "what changed in this revision" marker -- bold plus a soft amber
      wash, so it reads on both the dark tooltip and the white run sheet, and
      still shows as bold if a printer drops background colors. */
@@ -1145,6 +1197,7 @@
   <button onclick="window.print()" style="background:var(--surface-raised); color:var(--gold-bright); border:1px solid var(--gold); padding:8px 18px; border-radius:20px; font-size:12px; cursor:pointer;">🖨 <span data-i18n="print_view">Print this view (one landscape page)</span></button>
   <button id="printRunSheetBtn" style="background:var(--surface-raised); color:var(--gold-bright); border:1px solid var(--gold); padding:8px 18px; border-radius:20px; font-size:12px; cursor:pointer; margin-left:10px;">🖨 <span data-i18n="print_runsheet">Print run sheet (day view)</span></button>
   <button id="allNotesBtn" style="background:var(--surface-raised); color:var(--gold-bright); border:1px solid var(--gold); padding:8px 18px; border-radius:20px; font-size:12px; cursor:pointer; margin-left:10px;">✉ <span data-i18n="all_notes_btn">All Notes</span></button>
+  <button id="monthViewToggleBtn" style="background:var(--surface-raised); color:var(--gold-bright); border:1px solid var(--gold); padding:8px 18px; border-radius:20px; font-size:12px; cursor:pointer; margin-left:10px;">📅 <span data-i18n="month_view_btn">Month View</span></button>
   <select id="runSheetGroupFilter" style="margin-left:10px; background:var(--surface-raised); color:var(--text); border:1px solid var(--line); border-radius:14px; padding:7px 10px; font-size:12px;">
     <option value="" data-i18n="runsheet_all_groups">All groups (default)</option>
   </select>
@@ -1156,6 +1209,8 @@
 </div>
 
 <div class="day-tabs no-print-hide" id="dayTabs"></div>
+
+<div class="month-view no-print-hide" id="monthViewContainer" style="display:none;"></div>
 
 <div class="group-legend" id="groupLegend"></div>
 
@@ -1354,6 +1409,8 @@ const I18N = {
     legend_same_group: "Same group, not a conflict — one team's continuous room hold (color matches the layer)",
     note_saved: "Saved.",
     note_cleared: "Cleared.",
+    month_view_btn: "Month View",
+    day_view_btn: "Day View",
     all_notes_btn: "All Notes",
     all_notes_title: "All Notes",
     all_notes_copy: "Copy",
@@ -1429,6 +1486,8 @@ const I18N = {
     legend_same_group: "Mismo grupo, no es un conflicto — uso continuo de la sala por un mismo equipo (el color coincide con la capa)",
     note_saved: "Guardado.",
     note_cleared: "Borrado.",
+    month_view_btn: "Vista mensual",
+    day_view_btn: "Vista diaria",
     all_notes_btn: "Todas las notas",
     all_notes_title: "Todas las notas",
     all_notes_copy: "Copiar",
@@ -1671,6 +1730,10 @@ async function setLang(lang) {
     setTranslatingIndicator(true);
     await prepareLiveTranslations();
     setTranslatingIndicator(false);
+  }
+  if (monthViewActive) {
+    renderMonthView();
+    return;
   }
   renderGroupLegend();
   renderDateRangeSubtitle();
@@ -2073,6 +2136,84 @@ function renderDayTabs() {
     dayTabsEl.appendChild(tab);
   });
 }
+
+// --- Monthly calendar view (v1) ---------------------------------------
+// Group name + Set headcount per day, October 2026 only for now (no month
+// navigation yet). Set is used rather than Gtd to stay consistent with the
+// number shown everywhere else in Compass (timeline chips, run sheet).
+// Multiple concurrent events for the same group on the same day are NOT
+// summed (that would double-count the same people across simultaneous
+// breakouts) -- the peak (max) Set value for that group that day is shown.
+let monthViewActive = false;
+const MONTH_VIEW_YEAR = 2026;
+const MONTH_VIEW_MONTH = 10; // October
+function renderMonthView() {
+  const container = document.getElementById('monthViewContainer');
+  const year = MONTH_VIEW_YEAR, month = MONTH_VIEW_MONTH;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const firstWeekday = new Date(year, month - 1, 1).getDay();
+  const weekdayKeys = LANG === 'es' ? WEEKDAY_NAMES_ES : ['sun','mon','tue','wed','thu','fri','sat'];
+  const weekdayLabels = LANG === 'es'
+    ? WEEKDAY_NAMES_ES.map(w => w.toUpperCase())
+    : ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const groupByName = {};
+  (DATA.groups || []).forEach(g => { groupByName[g.name] = g; });
+
+  const byDate = {};
+  (DATA.days || []).forEach(day => {
+    if (!day.date.startsWith(`${year}-${String(month).padStart(2, '0')}`)) return;
+    const agg = {};
+    (day.rooms || []).forEach(r => (r.events || []).forEach(e => {
+      if (!e.group) return;
+      const val = e.set != null ? e.set : e.gtd;
+      if (val == null) return;
+      agg[e.group] = Math.max(agg[e.group] || 0, val);
+    }));
+    byDate[day.date] = agg;
+  });
+
+  let html = `<div class="month-view-header">${MONTH_NAMES[month - 1]} ${year}</div><div class="month-grid">`;
+  weekdayLabels.forEach(w => { html += `<div class="month-weekday">${w}</div>`; });
+  for (let i = 0; i < firstWeekday; i++) html += `<div class="month-cell empty-cell"></div>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const iso = `${year}-${String(month).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const isToday = iso === TODAY;
+    const agg = byDate[iso] || {};
+    let cellBody = '';
+    Object.keys(agg).forEach(gname => {
+      const g = groupByName[gname];
+      const color = g ? g.color : '#647585';
+      cellBody += `<div class="month-cell-group"><span class="month-cell-dot" style="background:${color}"></span><span class="month-cell-name">${gname}</span><span class="month-cell-count">${agg[gname]}</span></div>`;
+    });
+    html += `<div class="month-cell${isToday ? ' is-today' : ''}"><div class="month-daynum">${d}</div>${cellBody}</div>`;
+  }
+  html += `</div>`;
+  container.innerHTML = html;
+}
+function setMonthView(active) {
+  monthViewActive = active;
+  const dayViewEls = [dayTabsEl, groupLegendEl, document.getElementById('conflictsPanel'),
+    document.getElementById('snapshot'), document.querySelector('.slider-wrap'),
+    document.querySelector('.layer-toggles'), document.getElementById('amenitiesPanel'),
+    document.querySelector('.timeline-container'), document.getElementById('flagsPanel')];
+  const btn = document.getElementById('monthViewToggleBtn');
+  if (active) {
+    dayViewEls.forEach(el => { if (el) el.style.display = 'none'; });
+    renderMonthView();
+    document.getElementById('monthViewContainer').style.display = 'block';
+    btn.innerHTML = '📋 <span data-i18n="day_view_btn">Day View</span>';
+  } else {
+    document.getElementById('monthViewContainer').style.display = 'none';
+    dayViewEls.forEach(el => { if (el) el.style.display = ''; });
+    renderDayTabs();
+    renderRooms();
+    renderFlagsPanel();
+    update();
+    btn.innerHTML = '📅 <span data-i18n="month_view_btn">Month View</span>';
+  }
+  applyStaticTranslations();
+}
+document.getElementById('monthViewToggleBtn').addEventListener('click', () => setMonthView(!monthViewActive));
 
 function activeDay() { return DATA.days[activeDayIndex]; }
 
