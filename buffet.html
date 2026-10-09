@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buffet Line Builder</title>
+<style>
+:root{--bg:#f3f1ea;--card:#fff;--ink:#1b2430;--mute:#667385;--line:#cfd5dc;--accent:#1f5f8b;--warn:#b8323a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+header{background:#1b2430;color:#f5f2eb;padding:10px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+header h1{font-size:17px;margin:0}header small{color:#aeb9c7}
+header .sp{margin-left:auto;display:flex;gap:8px;align-items:center}
+main{max-width:1500px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:12px}
+.card h2{font-size:14px;margin:0 0 8px}
+button{font:inherit;padding:5px 10px;border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer;color:var(--ink)}
+button:hover{border-color:var(--accent)}button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.danger{color:var(--warn)}button.sm{padding:4px 9px}
+input,select{font:inherit;padding:5px 7px;border:1px solid var(--line);border-radius:5px;background:#fff;color:var(--ink);min-width:0}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.ctl{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
+.ctl label,.meta label{display:flex;gap:6px;align-items:center}
+.ctl input[type=number]{width:64px}
+.meta{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
+.meta label{flex-direction:column;align-items:stretch;gap:3px;font-size:12px;color:var(--mute)}
+.meta input{font-size:14px;color:var(--ink)}
+.hint{font-size:12.5px;color:var(--mute)}
+.arow{display:grid;grid-template-columns:1fr 80px auto;gap:6px;margin-bottom:5px}
+details>summary{cursor:pointer;color:var(--accent)}
+#printSheet{display:none}
+#keyBox{background:#fff;color:#141a21}
+@media (max-width:700px){.meta{grid-template-columns:1fr}}
+@media print{
+  @page{size:landscape;margin:0}
+  body{background:#fff;padding:0.35in;color:#141a21}
+  body.printing>*:not(#printSheet){display:none!important}
+  body.printing #printSheet{display:block!important}
+  .bps-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #141a21;padding-bottom:4px;margin-bottom:8px}
+  .bps-head h2{margin:0;font-size:20px}.bps-head div{font-size:12px;color:#333;text-align:right}
+  #printSheet .buffet-diagram svg{width:100%;max-height:3.6in}
+  #printSheet .buffet-key{columns:3;font-size:14px}
+  #printSheet .buffet-key b{flex:0 0 22px;height:22px;line-height:20px;font-size:13px}
+  #printSheet .buffet-lines{font-size:14px}#printSheet .buffet-legend{font-size:11px}#printSheet .buffet-assign{font-size:13px;max-width:340px}
+}
+</style></head><body>
+<header><h1>Buffet Line Builder</h1><small>Add the tables and chafers, drag them where they go, type what goes in each one, print.</small>
+  <span class="sp"><button id="btnNew">New</button><button id="btnPrint" class="primary">🖨 Print (one landscape page)</button></span></header>
+<main>
+  <div class="card">
+    <div class="meta">
+      <label>Event / group<input id="mTitle" placeholder="e.g. Texas A&amp;M Football — Friday Night Dinner"></label>
+      <label>Date &amp; time<input id="mDate" placeholder="e.g. Fri, Oct 9 · 6:00 PM"></label>
+      <label>Room<input id="mRoom" placeholder="e.g. Windsor I &amp; II &amp; III"></label>
+    </div>
+    <div class="bar"><span class="hint">Saved on this computer:</span><select id="saved"></select><button id="btnDel" class="sm danger">Delete this one</button><span class="hint" id="savedHint"></span></div>
+  </div>
+  <div class="card" id="builder"></div>
+  <div class="card"><h2>What will print</h2><div id="keyBox"></div></div>
+</main>
+<div id="printSheet"></div>
+<script>
+/* Buffet layout renderer -- ONE source of truth.  (v3: free placement, drawn to scale)
+   Used by the local editor (tools/buffet/editor.html) AND inlined into Compass_CURRENT.html by
+   bake_buffet.py between the BUFFET-RENDER markers. Pure functions: no DOM access, no Compass globals.
+   Layout shape:
+   { tables: 6,            // 6-ft x 30-in tables per line, end to end (the whole line is drawn as ONE straight row)
+     sides: 1|2,           // 1 = against a wall (wall marked), 2 = free-standing, guests on both sides
+     lines: 1..n,          // identical lines to set up
+     items: [{shape:'rect'|'round'|'soup'|'bowl'|'dressing'|'custom', label:'', x:inches along the line (center), y:inches across (center, 0-30),
+              rot:0|90, w:, d: (custom only)}],
+     assignments: [{label:'Hot food', count:3}], menuStamp:'abcd1234', draft: true|false }
+   Older layouts (ordered items without x/y, or sideA/sideB) are placed automatically.
+   Real-world sizes (inches): table 72 x 30; 4 in between items when auto-placing. */
+
+function buffetNorm(text) { return String(text || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+
+// FNV-1a 32-bit over UTF-8 bytes (identical in tools/buffet/buffet_lib.py).
+function buffetHash(text) {
+  const bytes = new TextEncoder().encode(buffetNorm(text));
+  let h = 0x811c9dc5;
+  for (let i = 0; i < bytes.length; i++) { h ^= bytes[i]; h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16).padStart(8, '0');
+}
+
+function buffetEsc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+const BUFFET_TABLE_LEN = 72, BUFFET_TABLE_DEP = 30, BUFFET_GAP = 4;
+// Footprints in inches: w = length ALONG the table, d = depth ACROSS it (chafers sit sideways: their 24 in side spans the
+// 30 in table). cluster = how many identical small items auto-place side by side across the table.
+const BUFFET_SHAPES = {
+  rect:     { w: 14, d: 24, name: 'Chafer',       dims: '24 x 14 in', cluster: 1 },
+  round:    { w: 18, d: 18, name: 'Round chafer', dims: '18 in',      cluster: 1 },
+  soup:     { w: 10, d: 10, name: 'Soup',         dims: '10 in',      cluster: 2 },
+  bowl:     { w: 24, d: 24, name: 'Salad bowl',   dims: '24 in',      cluster: 1 },
+  dressing: { w: 6,  d: 6,  name: 'Dressing',     dims: '6 in',       cluster: 3 },
+  custom:   { w: 12, d: 12, name: 'Custom size',  dims: 'custom',     cluster: 1 }
+};
+const BUFFET_OLD_SHAPE = { pan: 'rect', round: 'round', small: 'dressing' };
+
+function buffetShape(it) { return BUFFET_SHAPES[it && it.shape] || BUFFET_SHAPES.rect; }
+
+// Footprint of one placed item after rotation: { w: along the table, d: across }
+function buffetDims(it) {
+  const s = buffetShape(it);
+  let w = s.w, d = s.d;
+  if (it && it.shape === 'custom') { w = Math.min(120, Math.max(1, parseFloat(it.w) || 12)); d = Math.min(120, Math.max(1, parseFloat(it.d) || 12)); }
+  if (it && (it.rot === 90 || it.rot === 270)) { const t = w; w = d; d = t; }
+  return { w, d };
+}
+
+// Put ordered items in a row along the line (auto placement for older layouts / "fill from menu").
+function buffetAutoPlace(items, sides) {
+  const G = BUFFET_GAP; let x = G, slot = [];
+  const flush = () => {
+    if (!slot.length) return;
+    const dm = slot.map(buffetDims), along = Math.max.apply(null, dm.map(a => a.w));
+    const span = dm.reduce((a, b) => a + b.d, 0) + (slot.length - 1) * G;
+    let y = sides === 1 ? 3 : BUFFET_TABLE_DEP / 2 - span / 2;
+    slot.forEach((it, k) => { it.x = x + along / 2; it.y = y + dm[k].d / 2; y += dm[k].d + G; it.rot = it.rot || 0; });
+    x += along + G; slot = [];
+  };
+  items.forEach(it => {
+    const s = buffetShape(it);
+    if (slot.length && slot[0].shape === it.shape && slot.length < s.cluster) { slot.push(it); return; }
+    flush(); slot = [it];
+  });
+  flush();
+  return items;
+}
+
+// Accepts v1 (sideA/sideB, pan/round/small), v2 (ordered items) and v3 (items with x/y); always returns a v3 layout.
+function buffetNormLayout(l) {
+  l = l || {};
+  let items = l.items;
+  if (!Array.isArray(items)) items = (l.sideA || []).map(it => ({ shape: BUFFET_OLD_SHAPE[it.shape] || it.shape, label: it.label }));
+  items = items.map(it => Object.assign({}, it, { shape: BUFFET_SHAPES[it.shape] ? it.shape : (BUFFET_OLD_SHAPE[it.shape] || 'rect') }));
+  const sides = l.sides === 1 ? 1 : 2;
+  if (items.some(it => typeof it.x !== 'number' || typeof it.y !== 'number')) buffetAutoPlace(items, sides);
+  return Object.assign({}, l, {
+    items: items,
+    tables: Math.min(20, Math.max(1, parseInt(l.tables, 10) || 6)),
+    sides: sides,
+    lines: parseInt(l.lines, 10) || 1
+  });
+}
+
+// Items in numbered order (left to right along the line, then across): [{it, i, n, w, d, cx, cy}]
+function buffetOrdered(layout) {
+  const lay = buffetNormLayout(layout);
+  const arr = lay.items.map((it, i) => { const dm = buffetDims(it); return { it, i, w: dm.w, d: dm.d, cx: it.x, cy: it.y }; });
+  arr.sort((a, b) => (a.cx - b.cx) || (a.cy - b.cy));
+  arr.forEach((a, k) => { a.n = k + 1; });
+  return { lay, arr };
+}
+
+// Fit summary for the editor / staff view: tables needed, items hanging off the tables, overlapping pairs.
+function buffetFit(layout) {
+  const { lay, arr } = buffetOrdered(layout);
+  const extent = arr.reduce((m, a) => Math.max(m, a.cx + a.w / 2), 0);
+  const need = Math.max(1, Math.ceil(extent / BUFFET_TABLE_LEN - 1e-9));
+  const off = arr.filter(a => a.cy - a.d / 2 < -0.5 || a.cy + a.d / 2 > BUFFET_TABLE_DEP + 0.5 || a.cx - a.w / 2 < -0.5).length;
+  let overlaps = 0;
+  for (let i = 0; i < arr.length; i++) for (let j = i + 1; j < arr.length; j++) {
+    const a = arr[i], b = arr[j];
+    if (Math.abs(a.cx - b.cx) < (a.w + b.w) / 2 - 0.5 && Math.abs(a.cy - b.cy) < (a.d + b.d) / 2 - 0.5) overlaps++;
+  }
+  return { tables: lay.tables, need, over: need > lay.tables, off, overlaps };
+}
+
+// One shape. w/d = footprint (inches, already rotated); S = units per inch; sw = stroke width.
+function buffetShapeSvg(shape, w, d, cx, cy, S, sw) {
+  sw = sw || 1.6;
+  const base = `stroke="currentColor" stroke-width="${sw}"`, W = w * S, D = d * S;
+  if (shape === 'round') return `<circle cx="${cx}" cy="${cy}" r="${W / 2}" fill="rgba(128,128,128,.14)" ${base}/><circle cx="${cx}" cy="${cy}" r="${W / 2 * 0.68}" fill="none" stroke="currentColor" stroke-width="${sw * 0.6}"/>`;
+  if (shape === 'soup') return `<circle cx="${cx}" cy="${cy}" r="${W / 2}" fill="rgba(128,128,128,.38)" ${base}/>`;
+  if (shape === 'bowl') return `<circle cx="${cx}" cy="${cy}" r="${W / 2}" fill="rgba(128,128,128,.08)" ${base} stroke-dasharray="${sw * 3} ${sw * 2}"/>`;
+  if (shape === 'dressing') return `<circle cx="${cx}" cy="${cy}" r="${Math.max(W / 2, sw * 2.5)}" fill="rgba(128,128,128,.30)" ${base}/>`;
+  return `<rect x="${cx - W / 2}" y="${cy - D / 2}" width="${W}" height="${D}" rx="${Math.min(3, sw * 2)}" fill="rgba(128,128,128,.14)" ${base}/>`;
+}
+
+// SVG drawn to scale (1 inch = S units): the whole line of tables in one straight row. Big single items carry their number
+// inside; small ones (and side-by-side groups, e.g. "4-6") get a tag above/below with a short leader. What goes in each item
+// is in the numbered key under the drawing (buffetHtml).
+function buffetSvg(layout, L) {
+  L = L || {};
+  const { lay, arr } = buffetOrdered(layout), fit = buffetFit(lay), sides = lay.sides;
+  const CW = 540, PADL = 12, PADR = 12, HEAD = 18, TAG = 22, WALL = sides === 1 ? 6 : 0, R = 7.5;
+  const drawTables = Math.max(lay.tables, fit.need);
+  const S = Math.min(3.4, CW / (drawTables * BUFFET_TABLE_LEN)), TD = BUFFET_TABLE_DEP * S;
+  const W = PADL + drawTables * BUFFET_TABLE_LEN * S + PADR;
+  const overTxt = typeof L.over === 'function' ? L.over(fit.need) : `OVER CAPACITY - needs ${fit.need} tables`;
+  // group side-by-side items (same spot along the line) so they share one tag
+  const groups = [];
+  arr.forEach(a => { const g = groups[groups.length - 1]; if (g && a.cx - g.items[g.items.length - 1].cx <= 3) g.items.push(a); else groups.push({ items: [a] }); });
+  const occ = { up: [], dn: [] }, maxLev = sides === 2 ? 2 : 3; let prev = 'dn', upLv = 0, dnLv = 0;
+  groups.forEach(g => {
+    const first = g.items[0], single = g.items.length === 1;
+    g.cx = PADL + g.items.reduce((s, a) => s + a.cx, 0) / g.items.length * S;
+    g.inside = single && first.w * S >= 17 && first.d * S >= 17;
+    if (g.inside) return;
+    g.txt = single ? String(first.n) : `${first.n}-${g.items[g.items.length - 1].n}`;
+    g.tw = Math.max(2 * R, g.txt.length * 6 + 8);
+    const order = sides === 2 ? (prev === 'dn' ? ['up', 'dn'] : ['dn', 'up']) : ['dn'];
+    let best = null;
+    for (let lev = 0; lev < maxLev && !best; lev++) for (const sd of order) {
+      if (occ[sd].every(q => q.lev !== lev || q.r < g.cx - g.tw / 2 - 2 || q.l > g.cx + g.tw / 2 + 2)) { best = { sd, lev }; break; }
+    }
+    if (!best) best = { sd: order[0], lev: maxLev - 1 };
+    occ[best.sd].push({ lev: best.lev, l: g.cx - g.tw / 2, r: g.cx + g.tw / 2 });
+    g.tag = best.sd; g.lev = best.lev; prev = best.sd;
+    if (best.sd === 'up') upLv = Math.max(upLv, best.lev + 1); else dnLv = Math.max(dnLv, best.lev + 1);
+  });
+  const upH = upLv * TAG, dnH = dnLv * TAG;
+  const tTop = HEAD + upH + WALL, tBot = tTop + TD, tw = lay.tables * BUFFET_TABLE_LEN * S;
+  let g = '';
+  g += `<rect x="${PADL}" y="${tTop}" width="${tw}" height="${TD}" rx="2" fill="rgba(128,128,128,.07)" stroke="currentColor" stroke-width="1.6"/>`;
+  for (let j = 1; j < lay.tables; j++) g += `<line x1="${PADL + j * BUFFET_TABLE_LEN * S}" y1="${tTop}" x2="${PADL + j * BUFFET_TABLE_LEN * S}" y2="${tBot}" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>`;
+  if (drawTables > lay.tables) g += `<rect x="${PADL + tw}" y="${tTop}" width="${(drawTables - lay.tables) * BUFFET_TABLE_LEN * S}" height="${TD}" fill="none" stroke="#b8323a" stroke-width="1.6" stroke-dasharray="6 4"/>`;
+  if (sides === 1) g += `<line x1="${PADL - 4}" y1="${tTop - 3}" x2="${PADL + drawTables * BUFFET_TABLE_LEN * S + 4}" y2="${tTop - 3}" stroke="currentColor" stroke-width="4"/>`;
+  g += `<text x="2" y="12" font-size="10" font-weight="700" fill="currentColor">${buffetEsc(L.start || 'START')} ▸</text>`;
+  if (sides === 1) g += `<text x="${PADL + tw}" y="12" font-size="10" text-anchor="end" fill="currentColor">▲ ${buffetEsc(L.wall || 'WALL')}</text>`;
+  if (fit.over) g += `<text x="${PADL + 70}" y="12" font-size="10" font-weight="700" fill="#b8323a">${buffetEsc(overTxt)}</text>`;
+  groups.forEach(gr => {
+    gr.items.forEach(a => {
+      const cx = PADL + a.cx * S, cy = tTop + a.cy * S;
+      g += buffetShapeSvg(a.it.shape, a.w, a.d, cx, cy, S);
+      if (gr.inside) g += `<text x="${cx}" y="${cy + 3.6}" font-size="10" font-weight="700" text-anchor="middle" fill="currentColor">${a.n}</text>`;
+    });
+    if (!gr.inside) {
+      const top = tTop + Math.min.apply(null, gr.items.map(a => a.cy - a.d / 2)) * S, bot = tTop + Math.max.apply(null, gr.items.map(a => a.cy + a.d / 2)) * S;
+      const edge = gr.tag === 'up' ? top : bot;
+      const ty = gr.tag === 'up' ? tTop - R - 4 - gr.lev * TAG : tBot + R + 4 + gr.lev * TAG;
+      g += `<line x1="${gr.cx}" y1="${edge}" x2="${gr.cx}" y2="${ty + (gr.tag === 'up' ? R : -R)}" stroke="currentColor" stroke-width=".8" opacity=".7"/>`;
+      g += `<rect x="${gr.cx - gr.tw / 2}" y="${ty - R}" width="${gr.tw}" height="${2 * R}" rx="${R}" fill="rgba(128,128,128,.22)" stroke="currentColor" stroke-width="1"/>`;
+      g += `<text x="${gr.cx}" y="${ty + 3.4}" font-size="9.5" font-weight="700" text-anchor="middle" fill="currentColor">${gr.txt}</text>`;
+    }
+  });
+  const H = tBot + dnH + 2;
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="buffet layout">${g}</svg>`;
+}
+
+// Full block: lines/tables note, SVG, scale legend, numbered key, assignments. L = labels (from t() in Compass, English in the editor).
+function buffetHtml(layout, L) {
+  if (!layout) return '';
+  L = L || {};
+  const { lay, arr } = buffetOrdered(layout), fit = buffetFit(lay);
+  const lines = lay.lines;
+  const tblTxt = typeof L.tables === 'function' ? L.tables(lay.tables) : `${lay.tables} x 6 ft tables`;
+  const linesTxt = lines > 1 ? (typeof L.lines === 'function' ? L.lines(lines) : `Set up ${lines} identical lines`) : '';
+  const sideTxt = lay.sides === 2 ? (L.both || 'Double-sided: guests on both sides') : (L.one || 'Single-sided: against a wall');
+  const note = `<div class="buffet-lines">${buffetEsc([linesTxt, tblTxt + (lines > 1 ? ' each' : ''), sideTxt].filter(Boolean).join(' · '))}</div>`;
+  const draft = layout.draft ? `<span class="buffet-draft">${buffetEsc(L.draft || 'DRAFT')}</span>` : '';
+  const used = {}; lay.items.forEach(it => { used[it.shape] = 1; });
+  const names = L.shapes || {};
+  const legend = Object.keys(BUFFET_SHAPES).filter(k => used[k] && k !== 'custom').map(k => `${buffetEsc(names[k] || BUFFET_SHAPES[k].name)} ${BUFFET_SHAPES[k].dims}`).join(' · ');
+  const scale = `<div class="buffet-legend">${buffetEsc(L.scale || 'Drawn to scale: 6 ft table, 30 in wide')}${legend ? ' — ' + legend : ''}</div>`;
+  const key = arr.length ? `<ol class="buffet-key">${arr.map(a => `<li><b>${a.n}</b><span>${buffetEsc(a.it.label)}</span></li>`).join('')}</ol>` : '';
+  const assign = (lay.assignments || []).filter(a => a && (a.label || a.count != null && a.count !== ''))
+    .map(a => `<li><span>${buffetEsc(a.label)}</span><b>${buffetEsc(a.count)}</b></li>`).join('');
+  const assignBox = assign ? `<div class="buffet-assign"><div class="buffet-assign-title">${buffetEsc(L.assignments || 'Assignments')}</div><ul>${assign}</ul></div>` : '';
+  return `<div class="buffet-block${fit.over ? ' buffet-over' : ''}">${draft}${note}<div class="buffet-wrap"><div class="buffet-diagram">${arr.length ? buffetSvg(lay, L) : ''}</div>${scale}${key}${assignBox}</div></div>`;
+}
+
+/* Styles for the diagram block, shared by editor and Compass (installed once at load). */
+const BUFFET_CSS = `
+.buffet-block{margin-top:4px;position:relative;color:inherit}
+.buffet-draft{display:inline-block;font:700 9px/1 sans-serif;letter-spacing:1px;padding:2px 5px;border:1px dashed #b8323a;color:#b8323a;border-radius:3px;margin-bottom:3px}
+.buffet-lines{font-weight:700;font-size:11px;margin:2px 0 3px}
+.buffet-wrap{display:block}
+.buffet-diagram svg{width:100%;height:auto;display:block}
+.buffet-legend{font-size:10px;opacity:.75;margin:3px 0 4px}
+.buffet-key{list-style:none;margin:4px 0 6px;padding:0;columns:2;column-gap:14px;font-size:11px}
+.buffet-key li{display:flex;gap:6px;align-items:baseline;padding:1px 0;break-inside:avoid}
+.buffet-key b{flex:0 0 17px;height:17px;border-radius:50%;border:1px solid currentColor;background:rgba(128,128,128,.22);font-size:10px;line-height:15px;text-align:center}
+.buffet-key span{min-width:0;overflow-wrap:anywhere}
+.buffet-assign{max-width:260px;font-size:11px;border:1px solid rgba(128,128,128,.55);border-radius:4px;padding:5px 8px;margin-top:4px}
+.buffet-assign-title{font-weight:700;margin-bottom:2px}
+.buffet-assign ul{list-style:none;margin:0;padding:0}
+.buffet-assign li{display:flex;justify-content:space-between;gap:10px;padding:1px 0;border-top:1px dotted rgba(128,128,128,.4)}
+.buffet-assign li:first-child{border-top:0}
+@media print{.buffet-block,.buffet-wrap{break-inside:avoid;page-break-inside:avoid}}
+`;
+function buffetInstallCss() {
+  if (typeof document === 'undefined' || document.getElementById('buffet-css')) return;
+  const st = document.createElement('style'); st.id = 'buffet-css'; st.textContent = BUFFET_CSS; document.head.appendChild(st);
+}
+</script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = buffetEsc;
+const LBL = { start: 'START', assignments: 'Assignments', draft: 'DRAFT', lines: n => `Set up ${n} identical lines` };
+const STORE = 'buffetBuilder.v1';
+let db = { current: null, layouts: {} }, work = null, meta = { title: '', date: '', room: '' }, selIdx = -1, zoom = 4, saveTimer = null;
+
+// ---------- storage (this browser only; everything still works if storage is blocked)
+function loadDb() { try { const d = JSON.parse(localStorage.getItem(STORE) || 'null'); if (d && d.layouts) db = d; } catch (e) {} }
+function persist() { try { localStorage.setItem(STORE, JSON.stringify(db)); $('savedHint').textContent = 'Saved ✓'; } catch (e) { $('savedHint').textContent = 'Could not save in this browser (printing still works).'; } }
+function blank() { return { tables: 6, sides: 2, lines: 1, items: [], assignments: [] }; }
+function newId() { return 'b' + Date.now().toString(36); }
+function touch() {
+  $('savedHint').textContent = 'Saving…'; clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    if (!db.current) db.current = newId();
+    db.layouts[db.current] = { meta: Object.assign({}, meta), layout: JSON.parse(JSON.stringify(work)), updated: Date.now() };
+    persist(); fillSaved();
+  }, 300);
+}
+function label(id) { const m = db.layouts[id].meta; return [m.title || 'Untitled buffet', m.date].filter(Boolean).join(' — '); }
+function fillSaved() {
+  const ids = Object.keys(db.layouts).sort((a, b) => db.layouts[b].updated - db.layouts[a].updated);
+  $('saved').innerHTML = ids.length ? ids.map(id => `<option value="${id}">${esc(label(id))}</option>`).join('') : '<option value="">(nothing saved yet)</option>';
+  if (db.current && db.layouts[db.current]) $('saved').value = db.current;
+}
+function openId(id) {
+  const rec = db.layouts[id]; if (!rec) return;
+  db.current = id; meta = Object.assign({ title: '', date: '', room: '' }, rec.meta); work = buffetNormLayout(JSON.parse(JSON.stringify(rec.layout)));
+  work.assignments = work.assignments || []; selIdx = -1; $('mTitle').value = meta.title; $('mDate').value = meta.date; $('mRoom').value = meta.room; renderBuilder(); renderKey();
+}
+function startNew() { db.current = null; work = blank(); meta = { title: '', date: '', room: '' }; selIdx = -1; $('mTitle').value = $('mDate').value = $('mRoom').value = ''; $('savedHint').textContent = ''; renderBuilder(); renderKey(); }
+
+// ---------- items
+function newItem(shape) {
+  const items = work.items;
+  const probe = { shape, label: '', rot: 0 };
+  if (shape === 'custom') { const w = parseFloat(prompt('Length ALONG the table, in inches:', '12')), d = parseFloat(prompt('Depth ACROSS the table, in inches:', '12')); if (!(w > 0) || !(d > 0)) return null; probe.w = w; probe.d = d; probe.label = prompt('What is it? (you can change this later)', '') || ''; }
+  const dm = buffetDims(probe), right = items.reduce((m, it) => Math.max(m, it.x + buffetDims(it).w / 2), 0);
+  probe.x = Math.round((right ? right + 4 : 4) + dm.w / 2); probe.y = 15;
+  items.push(probe); selIdx = items.length - 1; touch(); return probe;
+}
+function overlapSet() {
+  const arr = work.items.map(it => ({ it, ...buffetDims(it) })), bad = new Set();
+  for (let i = 0; i < arr.length; i++) for (let j = i + 1; j < arr.length; j++) {
+    const a = arr[i], b = arr[j];
+    if (Math.abs(a.it.x - b.it.x) < (a.w + b.w) / 2 - 0.5 && Math.abs(a.it.y - b.it.y) < (a.d + b.d) / 2 - 0.5) { bad.add(i); bad.add(j); }
+  }
+  return bad;
+}
+function drawCanvas() {
+  const svg = $('cv'); if (!svg) return;
+  const T = work.tables, LEN = T * 72, ord = buffetOrdered(work), num = {}; ord.arr.forEach(a => { num[a.i] = a.n; });
+  const bad = overlapSet(), EXTRA = 36, vbW = LEN + EXTRA + 16;
+  svg.setAttribute('viewBox', `-8 -14 ${vbW} ${30 + 14 + 24}`);
+  svg.style.width = zoom ? Math.round(vbW * zoom) + 'px' : '100%';
+  let g = `<rect x="${LEN}" y="0" width="${EXTRA}" height="30" fill="none" stroke="#b8323a" stroke-width=".6" stroke-dasharray="3 2"/><text x="${LEN + 2}" y="-3" font-size="4.5" fill="#b8323a">past the end of the tables</text>`;
+  g += `<rect x="0" y="0" width="${LEN}" height="30" rx="1" fill="#fbfbfa" stroke="#1b2430" stroke-width=".9"/>`;
+  for (let j = 1; j < T; j++) g += `<line x1="${72 * j}" y1="0" x2="${72 * j}" y2="30" stroke="#1b2430" stroke-width=".4" stroke-dasharray="2 2" opacity=".6"/>`;
+  for (let j = 0; j <= T; j++) g += `<text x="${72 * j}" y="35" font-size="4.5" text-anchor="middle" fill="#667385">${j * 6} ft</text>`;
+  if (work.sides === 1) g += `<line x1="-2" y1="-1.5" x2="${LEN + 2}" y2="-1.5" stroke="#1b2430" stroke-width="2.2"/><text x="-6" y="-5" font-size="4.5" fill="#1b2430">WALL ▲</text>`;
+  g += `<text x="-6" y="-10" font-size="5" font-weight="700" fill="#1b2430">START ▸</text>`;
+  work.items.forEach((it, i) => {
+    const dm = buffetDims(it), on = i === selIdx, red = bad.has(i);
+    g += `<g class="it" data-i="${i}" style="cursor:grab;color:${red ? '#b8323a' : '#1b2430'}">` + buffetShapeSvg(it.shape, dm.w, dm.d, it.x, it.y, 1, 0.55) +
+      `<rect x="${it.x - dm.w / 2 - 1}" y="${it.y - dm.d / 2 - 1}" width="${dm.w + 2}" height="${dm.d + 2}" fill="transparent" ${on ? 'stroke="#1f5f8b" stroke-width="1" stroke-dasharray="2 1.5"' : ''}/>` +
+      `<text x="${it.x}" y="${it.y + 1.8}" font-size="${dm.w < 9 ? 4 : 5.5}" font-weight="700" text-anchor="middle" fill="#1b2430" style="pointer-events:none">${num[i]}</text></g>`;
+  });
+  svg.innerHTML = g;
+}
+function bindCanvas() {
+  const svg = $('cv'); let drag = null;
+  const toInches = ev => { const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
+  svg.addEventListener('pointerdown', ev => {
+    const g = ev.target.closest('.it'); if (!g) { selIdx = -1; drawCanvas(); renderSelPanel(); return; }
+    const i = parseInt(g.dataset.i, 10), it = work.items[i], p = toInches(ev); selIdx = i; drag = { i, ox: p.x - it.x, oy: p.y - it.y };
+    svg.setPointerCapture(ev.pointerId); drawCanvas(); renderSelPanel(); ev.preventDefault();
+  });
+  svg.addEventListener('pointermove', ev => {
+    if (!drag) return; const p = toInches(ev), it = work.items[drag.i];
+    const nx = Math.round(p.x - drag.ox), ny = Math.round(p.y - drag.oy);
+    if (nx !== it.x || ny !== it.y) { it.x = Math.max(0, nx); it.y = Math.max(-6, Math.min(36, ny)); touch(); drawCanvas(); renderKey(); }
+  });
+  const end = () => { if (drag) { drag = null; renderSelPanel(); } };
+  svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+  svg.addEventListener('keydown', ev => {
+    if (selIdx < 0) return; const it = work.items[selIdx], st = ev.shiftKey ? 6 : 1; let used = true;
+    if (ev.key === 'ArrowLeft') it.x = Math.max(0, it.x - st); else if (ev.key === 'ArrowRight') it.x += st;
+    else if (ev.key === 'ArrowUp') it.y -= st; else if (ev.key === 'ArrowDown') it.y += st;
+    else if (ev.key === 'Delete' || ev.key === 'Backspace') { work.items.splice(selIdx, 1); selIdx = -1; }
+    else used = false;
+    if (used) { ev.preventDefault(); touch(); drawCanvas(); renderKey(); renderSelPanel(); }
+  });
+}
+function renderSelPanel() {
+  const p = $('selPanel'); if (!p) return;
+  const it = work.items[selIdx];
+  if (!it) { p.innerHTML = '<span class="hint">Click an item on the table to select it, then drag it to move it. Arrow keys nudge it 1 inch (Shift: 6 inches); Delete removes it.</span>'; return; }
+  const n = (buffetOrdered(work).arr.find(a => a.i === selIdx) || {}).n;
+  p.innerHTML = `<b>#${n} &middot; ${BUFFET_SHAPES[it.shape].name}</b> <input id="selLabel" value="${esc(it.label)}" placeholder="What goes in it (e.g. BBQ pork)" style="flex:1;min-width:240px">` +
+    `<button class="sm" id="selRot">⟳ Turn 90°</button><button class="sm" id="selDup">Duplicate</button><button class="sm danger" id="selDel">Delete</button>` +
+    (it.shape === 'custom' ? `<label class="hint">along <input id="selW" type="number" value="${it.w || 12}" style="width:60px"> across <input id="selD" type="number" value="${it.d || 12}" style="width:60px"> in</label>` : '');
+  $('selLabel').oninput = ev => { it.label = ev.target.value; touch(); renderKey(); };
+  $('selRot').onclick = () => { it.rot = it.rot === 90 ? 0 : 90; touch(); drawCanvas(); renderKey(); };
+  $('selDup').onclick = () => { const c = JSON.parse(JSON.stringify(it)); c.x += buffetDims(it).w + 4; work.items.push(c); selIdx = work.items.length - 1; touch(); drawCanvas(); renderKey(); renderSelPanel(); };
+  $('selDel').onclick = () => { work.items.splice(selIdx, 1); selIdx = -1; touch(); drawCanvas(); renderKey(); renderSelPanel(); };
+  if ($('selW')) { $('selW').oninput = ev => { it.w = parseFloat(ev.target.value) || 12; touch(); drawCanvas(); renderKey(); }; $('selD').oninput = ev => { it.d = parseFloat(ev.target.value) || 12; touch(); drawCanvas(); renderKey(); }; }
+}
+function renderBuilder() {
+  const b = $('builder'); b.innerHTML = '';
+  const ctl = document.createElement('div'); ctl.className = 'ctl';
+  ctl.innerHTML = `<label>Tables (6 ft each): <input type="number" id="tables" min="1" max="20"></label>` +
+    `<label>Sides: <select id="sides"><option value="2">Double-sided (guests both sides)</option><option value="1">Single-sided (against a wall)</option></select></label>` +
+    `<label>Identical lines: <input type="number" id="lines" min="1" max="9"></label>`;
+  b.appendChild(ctl);
+  $('tables').value = work.tables; $('sides').value = work.sides; $('lines').value = work.lines || 1;
+  $('tables').oninput = ev => { work.tables = Math.min(20, Math.max(1, parseInt(ev.target.value, 10) || 1)); touch(); drawCanvas(); renderKey(); };
+  $('sides').onchange = ev => { work.sides = parseInt(ev.target.value, 10); touch(); drawCanvas(); renderKey(); };
+  $('lines').oninput = ev => { work.lines = Math.max(1, parseInt(ev.target.value, 10) || 1); touch(); renderKey(); };
+  const fitEl = document.createElement('div'); fitEl.id = 'fit'; fitEl.className = 'hint'; fitEl.style.marginBottom = '6px'; b.appendChild(fitEl);
+  const pal = document.createElement('div'); pal.className = 'bar'; pal.innerHTML = '<b>Add to the table:</b>';
+  [['rect', 'Chafer'], ['round', 'Round chafer'], ['soup', 'Soup'], ['bowl', 'Salad bowl'], ['dressing', 'Dressing (6 in)'], ['custom', 'Other size…']].forEach(([shape, txt]) => {
+    const bt = document.createElement('button'); bt.className = 'sm'; bt.textContent = '+ ' + txt;
+    bt.onclick = () => { if (newItem(shape)) { drawCanvas(); renderKey(); renderSelPanel(); const l = $('selLabel'); if (l) l.focus(); } }; pal.appendChild(bt);
+  });
+  const zs = document.createElement('label'); zs.className = 'hint'; zs.style.marginLeft = 'auto'; zs.innerHTML = 'Zoom: <select id="zoom"><option value="6">Huge</option><option value="4">Large</option><option value="2.5">Medium</option><option value="0">Fit to screen</option></select>';
+  pal.appendChild(zs); b.appendChild(pal); $('zoom').value = String(zoom); $('zoom').onchange = ev => { zoom = parseFloat(ev.target.value); drawCanvas(); };
+  const wrap = document.createElement('div'); wrap.style.cssText = 'border:1px solid var(--line);border-radius:6px;background:#fff;margin:8px 0;padding:4px;overflow-x:auto';
+  wrap.innerHTML = '<svg id="cv" tabindex="0" style="height:auto;display:block;touch-action:none;outline:none;-webkit-user-select:none;user-select:none"></svg>';
+  b.appendChild(wrap);
+  const sp = document.createElement('div'); sp.id = 'selPanel'; sp.className = 'bar'; sp.style.alignItems = 'center'; b.appendChild(sp);
+  const ad = document.createElement('details'); ad.style.marginTop = '12px'; ad.open = !!work.assignments.length;
+  ad.innerHTML = '<summary><b>Assignments</b> <span class="hint">(optional: label + number, e.g. Carvers 2)</span></summary>'; b.appendChild(ad);
+  work.assignments.forEach((a, i) => {
+    const r = document.createElement('div'); r.className = 'arow';
+    r.innerHTML = `<input value="${esc(a.label)}" placeholder="e.g. Hot food"><input value="${esc(a.count)}" placeholder="#"><button class="sm danger">✕</button>`;
+    const [li, ci, x] = r.children;
+    li.oninput = () => { a.label = li.value; touch(); renderKey(); }; ci.oninput = () => { a.count = ci.value; touch(); renderKey(); };
+    x.onclick = () => { work.assignments.splice(i, 1); touch(); renderBuilder(); renderKey(); };
+    ad.appendChild(r);
+  });
+  const add = document.createElement('button'); add.className = 'sm'; add.textContent = '+ Add assignment';
+  add.onclick = () => { work.assignments.push({ label: '', count: '' }); touch(); renderBuilder(); }; ad.appendChild(add);
+  bindCanvas(); drawCanvas(); renderSelPanel();
+}
+function renderKey() {
+  $('keyBox').innerHTML = buffetHtml(work, LBL) || '<span class="hint">Add something to the table to see it here.</span>';
+  const f = $('fit'); if (f) {
+    const x = buffetFit(work), bits = [];
+    bits.push(x.over ? `<b style="color:var(--warn)">Runs past the tables: needs ${x.need}, you have ${x.tables}.</b>` : `Fits on the tables (uses about ${x.need} of ${x.tables}).`);
+    if (x.overlaps) bits.push(`<b style="color:var(--warn)">${x.overlaps} pair${x.overlaps > 1 ? 's' : ''} overlapping (shown in red).</b>`);
+    if (x.off) bits.push(`<b style="color:var(--warn)">${x.off} item${x.off > 1 ? 's' : ''} hanging off the table.</b>`);
+    f.innerHTML = bits.join(' ');
+  }
+}
+function printNow() {
+  let s = $('printSheet');
+  const heads = [meta.date, meta.room].filter(Boolean).map(esc).join(' · ');
+  s.innerHTML = `<div class="bps-head"><h2>${esc(meta.title || 'Buffet line')}</h2><div>${heads}<br>Buffet layout</div></div>` + buffetHtml(work, LBL);
+  document.body.classList.add('printing'); window.print();
+}
+window.addEventListener('afterprint', () => document.body.classList.remove('printing'));
+
+// ---------- wiring
+['mTitle', 'mDate', 'mRoom'].forEach(id => { $(id).oninput = () => { meta.title = $('mTitle').value; meta.date = $('mDate').value; meta.room = $('mRoom').value; touch(); }; });
+$('btnNew').onclick = startNew;
+$('btnPrint').onclick = printNow;
+$('saved').onchange = ev => { if (ev.target.value) openId(ev.target.value); };
+$('btnDel').onclick = () => { const id = db.current; if (!id || !db.layouts[id]) return; if (!confirm('Delete "' + label(id) + '" from this computer?')) return; delete db.layouts[id]; db.current = null; persist(); startNew(); fillSaved(); };
+buffetInstallCss(); loadDb(); fillSaved();
+const last = Object.keys(db.layouts).sort((a, b) => db.layouts[b].updated - db.layouts[a].updated)[0];
+if (last) openId(last); else startNew();
+</script>
+<script src="password-gate.js"></script>
+</body></html>
