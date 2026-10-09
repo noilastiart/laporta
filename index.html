@@ -826,6 +826,13 @@
     body.print-buffet #buffetPrintSheet .buffet-legend { font-size: 11px; }
     body.print-buffet #buffetPrintSheet .buffet-assign { font-size: 13px; max-width: 340px; }
   }
+  .buffet-builder-overlay { position: fixed; inset: 0; z-index: 900; background: #f3f1ea; flex-direction: column; }
+  .buffet-builder-overlay.open { display: flex !important; }
+  .bbo-bar { background: #0a0e13; color: #f5f2eb; padding: 8px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+  .bbo-bar a { color: var(--gold-bright); margin-right: 16px; font-size: 12px; }
+  .bbo-bar button { background: var(--surface-raised); color: var(--gold-bright); border: 1px solid var(--gold); padding: 5px 14px; border-radius: 16px; font-size: 12px; cursor: pointer; }
+  .buffet-builder-overlay iframe { flex: 1; width: 100%; border: 0; background: #f3f1ea; }
+  @media print { .buffet-builder-overlay { display: none !important; } }
   .diagram-panel {
     position: fixed;
     top: 0;
@@ -1237,6 +1244,7 @@
   <button id="printRunSheetBtn" style="background:var(--surface-raised); color:var(--gold-bright); border:1px solid var(--gold); padding:8px 18px; border-radius:20px; font-size:12px; cursor:pointer; margin-left:10px;">🖨 <span data-i18n="print_runsheet">Print run sheet (day view)</span></button>
   <button id="allNotesBtn" style="background:var(--surface-raised); color:var(--gold-bright); border:1px solid var(--gold); padding:8px 18px; border-radius:20px; font-size:12px; cursor:pointer; margin-left:10px;">✉ <span data-i18n="all_notes_btn">All Notes</span></button>
   <button id="monthViewToggleBtn" style="background:var(--surface-raised); color:var(--gold-bright); border:1px solid var(--gold); padding:8px 18px; border-radius:20px; font-size:12px; cursor:pointer; margin-left:10px;">📅 <span data-i18n="month_view_btn">Month View</span></button>
+  <button id="buffetBuilderBtn" style="background:var(--surface-raised); color:var(--gold-bright); border:1px solid var(--gold); padding:8px 18px; border-radius:20px; font-size:12px; cursor:pointer; margin-left:10px;">🍴 <span data-i18n="buffet_builder_btn">Buffet builder</span></button>
   <select id="runSheetGroupFilter" style="margin-left:10px; background:var(--surface-raised); color:var(--text); border:1px solid var(--line); border-radius:14px; padding:7px 10px; font-size:12px;">
     <option value="" data-i18n="runsheet_all_groups">All groups (default)</option>
   </select>
@@ -1659,6 +1667,9 @@ const I18N = {
     flags_header: "Flagged for Review",
     flags_general: "General / multi-day",
     diagram_hint: "Floor-plan diagram from the source BEO. Panel stays open — click ✕ to close.",
+    buffet_builder_btn: "Buffet builder",
+    buffet_builder_tab: "Open in its own tab",
+    buffet_builder_close: "Close",
     buffet_title: "Buffet layout",
     buffet_assign: "Assignments",
     buffet_start: "START",
@@ -1756,6 +1767,9 @@ const I18N = {
     flags_header: "Marcado para revisión",
     flags_general: "General / varios días",
     diagram_hint: "Diagrama del plano del BEO original. El panel permanece abierto — haga clic en ✕ para cerrar.",
+    buffet_builder_btn: "Armador de buffet",
+    buffet_builder_tab: "Abrir en su propia pestaña",
+    buffet_builder_close: "Cerrar",
     buffet_title: "Distribución del buffet",
     buffet_assign: "Asignaciones",
     buffet_start: "INICIO",
@@ -3390,7 +3404,18 @@ document.getElementById('runSheetModal').addEventListener('click', (e) => {
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && document.getElementById('runSheetModal').classList.contains('open')) closeRunSheetPreview();
+  if (e.key === 'Escape' && document.getElementById('buffetBuilderOverlay').classList.contains('open')) closeBuffetBuilder();
 });
+// Stand-alone buffet builder (buffet.html) in a full-screen overlay. It is its own page with its own light theme and
+// saves only in this browser; nothing here reads or changes Compass data.
+function openBuffetBuilder() {
+  const f = document.getElementById('buffetBuilderFrame');
+  if (!f.getAttribute('src')) f.setAttribute('src', 'buffet.html');
+  document.getElementById('buffetBuilderOverlay').classList.add('open');
+}
+function closeBuffetBuilder() { document.getElementById('buffetBuilderOverlay').classList.remove('open'); }
+document.getElementById('buffetBuilderBtn').addEventListener('click', openBuffetBuilder);
+document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('#buffetBuilderClose')) closeBuffetBuilder(); });
 document.getElementById('runSheetPrintBtn').addEventListener('click', () => {
   document.body.classList.add('print-runsheet');
   window.print();
@@ -3445,6 +3470,12 @@ async function boot() {
 boot();
 </script>
 
+<div id="buffetBuilderOverlay" class="buffet-builder-overlay no-print-hide" style="display:none;">
+  <div class="bbo-bar"><strong data-i18n="buffet_builder_btn">Buffet builder</strong>
+    <span><a href="buffet.html" target="_blank" rel="noopener" data-i18n="buffet_builder_tab">Open in its own tab</a>
+    <button type="button" id="buffetBuilderClose">✕ <span data-i18n="buffet_builder_close">Close</span></button></span></div>
+  <iframe id="buffetBuilderFrame" title="Buffet builder"></iframe>
+</div>
 <script src="password-gate.js"></script>
 </body>
 </html>

@@ -5,7 +5,10 @@
 //
 // Scoped to GitHub Pages ONLY via a hostname check -- laporta.tech (and any other host this
 // file might ever be served from) is left completely alone, no prompt, no wipe, nothing.
-if (location.hostname.endsWith('.github.io')) {
+// The Buffet builder opens inside Compass in a same-site frame; Compass already asked, so don't ask twice.
+let insideCompass = false;
+try { insideCompass = window.parent !== window && window.parent.location.host === location.host; } catch (e) {}
+if (location.hostname.endsWith('.github.io') && !insideCompass) {
   const PAGES_PASSWORD = "Cellardoor"; // <-- set the real password here
   const pw = prompt("Enter password:");
   if (pw !== PAGES_PASSWORD) {
