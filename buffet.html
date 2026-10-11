@@ -25,22 +25,44 @@ input,select{font:inherit;padding:5px 7px;border:1px solid var(--line);border-ra
 .hint{font-size:12.5px;color:var(--mute)}
 .arow{display:grid;grid-template-columns:1fr 80px auto;gap:6px;margin-bottom:5px}
 details>summary{cursor:pointer;color:var(--accent)}
-#printSheet{display:none}
 #keyBox{background:#fff;color:#141a21}
 @media (max-width:700px){.meta{grid-template-columns:1fr}}
 @media print{
-  @page{size:landscape;margin:0}
   body{background:#fff;padding:0.35in;color:#141a21}
   body.printing>*:not(#printSheet){display:none!important}
   body.printing #printSheet{display:block!important}
-  .bps-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #141a21;padding-bottom:4px;margin-bottom:8px}
-  .bps-head h2{margin:0;font-size:20px}.bps-head div{font-size:12px;color:#333;text-align:right}
-  #printSheet .buffet-diagram svg{width:100%;max-height:3.6in}
-  #printSheet .buffet-key{columns:3;font-size:14px}
-  #printSheet .buffet-key b{flex:0 0 22px;height:22px;line-height:20px;font-size:13px}
-  #printSheet .buffet-lines{font-size:14px}#printSheet .buffet-legend{font-size:11px}#printSheet .buffet-assign{font-size:13px;max-width:340px}
 }
-</style></head><body>
+#printSheet,#labelSheet{display:none}
+.lpage{box-sizing:border-box;width:8.5in;height:11in;padding:.5in .25in;display:grid;grid-template-columns:4in 4in;grid-template-rows:repeat(5,2in);break-after:page;page-break-after:always;background:#fff;color:#000}
+.lpage:last-child{break-after:auto;page-break-after:auto}
+.lcard{box-sizing:border-box;width:4in;height:2in;padding:.14in .2in;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden}
+.lcard.ol{outline:1px solid #bbb;outline-offset:-1px}
+/*LABEL-FONT*/@font-face{font-family:'Nunito';font-style:normal;font-weight:800;font-display:block;src:url(data:font/woff2;base64,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) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD}/*END-LABEL-FONT*/
+.lcard .ltxt{font:800 40px/1.06 'Nunito','Avenir Next','Trebuchet MS',sans-serif;width:3.3in;max-width:100%;text-wrap:balance;overflow-wrap:break-word}
+.lcard.test{font:600 11px sans-serif;color:#555;outline:1px dashed #888;outline-offset:-1px;align-items:flex-start;justify-content:flex-start;text-align:left}
+.lsheet{margin:0}.lwrap{width:3.4in;height:4.4in;overflow:hidden;border:1px solid #bbb;background:#fff}.lscale{transform:scale(.4);transform-origin:top left;width:8.5in;height:11in}#labelPrev{display:flex;flex-wrap:wrap;gap:14px}
+@media print{
+  body.printing-labels{padding:0!important;background:#fff!important}
+  body.printing-labels>*:not(#labelSheet){display:none!important}
+  body.printing-labels #labelSheet{display:block!important}
+}
+.pt{border-collapse:collapse;width:100%;font-size:13px}.pt th,.pt td{border:1px solid var(--line);padding:3px 6px}.pt th{background:#f1f3f6;font-size:12px}.pt td{text-align:center}.pt td.l{text-align:left}.pt input{width:100%;min-width:60px;padding:3px 5px;border:1px solid var(--line);border-radius:4px;font-size:13px;text-align:center}.pt input[data-f=size]{min-width:130px}.pt .tot{font-weight:700;background:#f6f8fa}
+@media screen,print{
+  .bps-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #141a21;padding-bottom:4px;margin-bottom:6px}
+  .bps-head h2{margin:0;font-size:19px}.bps-head div{font-size:12px;color:#333;text-align:right}
+  #printSheet .buffet-diagram svg{width:100%;max-height:3.5in}
+  #printSheet .buffet-key{columns:3;font-size:13px}
+  #printSheet.dense .buffet-key{columns:5;font-size:9.5px;column-gap:10px}
+  #printSheet.dense .buffet-diagram svg{max-height:3.1in}
+  #printSheet .buffet-key b{flex:0 0 20px;height:20px;line-height:18px;font-size:12px}
+  #printSheet.dense .buffet-key b{flex:0 0 16px;height:16px;line-height:14px;font-size:10px}
+  #printSheet .bpt{font-size:11.5px}#printSheet .bpt th{font-size:10px}#printSheet .bpt td{height:22px}
+  #printSheet.mid .bpt td{height:18px}#printSheet.mid .bpt{font-size:10.5px}#printSheet.mid .buffet-diagram svg{max-height:3.2in}
+  #printSheet.dense .bpt{font-size:9.5px}#printSheet.dense .bpt td,#printSheet.dense .bpt th{height:15px;padding:1px 3px}#printSheet.dense .buffet-diagram svg{max-height:2.7in}
+  #printSheet .buffet-lines{font-size:13px}#printSheet .buffet-legend{font-size:10.5px}#printSheet .buffet-assign{font-size:12px;max-width:340px}details>summary{cursor:pointer;color:var(--accent)}
+
+}
+</style><style id="pageStyle"></style></head><body>
 <header><h1>Buffet Line Builder</h1><small>Add the tables and chafers, drag them where they go, type what goes in each one, print.</small>
   <span class="sp"><button id="btnNew">New</button><button id="btnPrint" class="primary">🖨 Print (one landscape page)</button></span></header>
 <main>
@@ -56,6 +78,7 @@ details>summary{cursor:pointer;color:var(--accent)}
   <div class="card"><h2>What will print</h2><div id="keyBox"></div></div>
 </main>
 <div id="printSheet"></div>
+<div id="labelSheet"></div>
 <script>
 /* Buffet layout renderer -- ONE source of truth.  (v3: free placement, drawn to scale)
    Used by the local editor (tools/buffet/editor.html) AND inlined into Compass_CURRENT.html by
@@ -64,7 +87,7 @@ details>summary{cursor:pointer;color:var(--accent)}
    { tables: 6,            // 6-ft x 30-in tables per line, end to end (the whole line is drawn as ONE straight row)
      sides: 1|2,           // 1 = against a wall (wall marked), 2 = free-standing, guests on both sides
      lines: 1..n,          // identical lines to set up
-     items: [{shape:'rect'|'round'|'soup'|'bowl'|'dressing'|'custom', label:'', x:inches along the line (center), y:inches across (center, 0-30),
+     items: [{shape:'rect'|'round'|'soup'|'bowl'|'fruit'|'tray'|'plates'|'tub'|'dressing'|'custom', label:'', x:inches along the line (center), y:inches across (center, 0-30),
               rot:0|90, w:, d: (custom only)}],
      assignments: [{label:'Hot food', count:3}], menuStamp:'abcd1234', draft: true|false }
    Older layouts (ordered items without x/y, or sideA/sideB) are placed automatically.
@@ -91,13 +114,71 @@ const BUFFET_SHAPES = {
   rect:     { w: 14, d: 24, name: 'Chafer',       dims: '24 x 14 in', cluster: 1 },
   round:    { w: 18, d: 18, name: 'Round chafer', dims: '18 in',      cluster: 1 },
   soup:     { w: 10, d: 10, name: 'Soup',         dims: '10 in',      cluster: 2 },
-  bowl:     { w: 24, d: 24, name: 'Salad bowl',   dims: '24 in',      cluster: 1 },
+  bowl:     { w: 20, d: 20, name: 'Salad bowl',   dims: '20 in',      cluster: 1 },
+  tray:     { w: 14, d: 24, name: 'Tray / pan (no chafer)', dims: '24 x 14 in', cluster: 1 },
+  fruit:    { w: 12, d: 12, name: 'Fruit bowl',   dims: '12 in',      cluster: 2 },
+  tub:      { w: 14, d: 14, name: 'Roll-ups (bus tub)', dims: '14 in sq', cluster: 1 },
+  plates:   { w: 11, d: 11, name: 'Plates',       dims: '11 in',      cluster: 3 },
   dressing: { w: 6,  d: 6,  name: 'Dressing',     dims: '6 in',       cluster: 3 },
   custom:   { w: 12, d: 12, name: 'Custom size',  dims: 'custom',     cluster: 1 }
 };
 const BUFFET_OLD_SHAPE = { pan: 'rect', round: 'round', small: 'dressing' };
 
 function buffetShape(it) { return BUFFET_SHAPES[it && it.shape] || BUFFET_SHAPES.rect; }
+
+// Pans: a chafer can hold 1 full pan, 2 half pans or 3 third pans, each with its own dish. item.pans = [{label}], item.lengthwise
+// (2 halves running the long way, "shotgun" pans). Items without pans are a single pan labeled item.label.
+function buffetPansOf(it) { return Array.isArray(it.pans) && it.pans.length ? it.pans : [{ label: (it && it.label) || '' }]; }
+function buffetItemText(it) {
+  const p = buffetPansOf(it);
+  if (p.length < 2) return p[0].label || (it && it.label) || '';
+  const frac = p.length === 2 ? '1/2' : '1/3';
+  return p.map(x => `(${frac}) ${x.label || '?'}`).join(' + ');
+}
+// ---- Pan count sheet: one row per dish (pan) on the line, in line order. Plates and roll-up tubs hold no food, so no row.
+const BUFFET_SIZE_BY_SHAPE = { round: 'Round', bowl: 'Salad bowl', fruit: 'Fruit bowl', dressing: '6 in container', soup: 'Soup round', tray: 'Tray / pan', custom: 'Custom' };
+function buffetPanSize(it, n) {
+  if (it.shape === 'rect') return n === 1 ? 'Full pan' : n === 2 ? (it.lengthwise ? 'Half pan (shotgun)' : 'Half pan') : '1/3 pan';
+  return BUFFET_SIZE_BY_SHAPE[it.shape] || '';
+}
+function buffetNum(v) { return (v === '' || v == null || isNaN(+v)) ? null : +v; }
+function buffetPanRows(layout) {
+  const { arr } = buffetOrdered(layout), rows = [];
+  arr.forEach(a => {
+    const it = a.it; if (it.shape === 'plates' || it.shape === 'tub') return;
+    const multi = Array.isArray(it.pans) && it.pans.length > 1, pans = buffetPansOf(it);
+    pans.forEach((pn, k) => {
+      const src = multi ? it.pans[k] : it;
+      const label = pn.label || (multi ? '' : it.label) || '', size = src.size || buffetPanSize(it, pans.length);
+      const key = buffetNorm(label) + '|' + buffetNorm(size), dup = rows.find(r => r.key === key);
+      if (dup) { dup.ns.push(a.n); return; }              // same dish in another spot on the line: ONE count, listed under every number
+      const initial = buffetNum(src.initial), added = buffetNum(src.added), left = buffetNum(src.left);
+      rows.push({ key, n: a.n, ns: [a.n], i: a.i, k, multi, label, size,
+        initial, added, left, total: (initial != null && left != null) ? initial + (added || 0) - left : null });
+    });
+  });
+  return rows;
+}
+function buffetPanTableHtml(layout, L) {
+  L = L || {};
+  const rows = buffetPanRows(layout), cell = v => (v == null ? '' : buffetEsc(v));
+  const body = r => `<tr><td>${buffetEsc(r.label)}</td><td>${buffetEsc(r.size)}</td><td class="c">${cell(r.initial)}</td><td class="c">${cell(r.added)}</td><td class="c">${cell(r.left)}</td><td class="c">${cell(r.total)}</td></tr>`;
+  const head = `<thead><tr><th>${buffetEsc(L.thItem || 'Menu items')}</th><th>${buffetEsc(L.thSize || 'Pan size')}</th><th>${buffetEsc(L.thInit || 'Initial buffet set')}</th><th>${buffetEsc(L.thAdd || 'Added during event')}</th><th>${buffetEsc(L.thLeft || 'Leftover (end pan count)')}</th><th>${buffetEsc(L.thTot || 'Total pans served')}</th></tr></thead>`;
+  const split = rows.length > 18, half = Math.ceil(rows.length / 2), parts = split ? [rows.slice(0, half), rows.slice(half)] : [rows];
+  return `<div class="bpt-wrap${split ? ' bpt-split' : ''}">` + parts.map(p => `<table class="bpt">${head}<tbody>${p.map(body).join('')}</tbody></table>`).join('') + '</div>';
+}
+// Tab-separated copy of the pan count sheet (pastes straight into Excel).
+function buffetPanTsv(layout) {
+  const h = ['Menu items', 'Pan size', 'Initial buffet set', 'Added during event', 'Leftover (end pan count)', 'Total pans served'];
+  return [h.join('\t')].concat(buffetPanRows(layout).map(r => [r.label, r.size, r.initial, r.added, r.left, r.total].map(v => v == null ? '' : v).join('\t'))).join('\n');
+}
+
+// Containers per line: chafers (rectangles), rounds (rounds + soup rounds); trays are not chafers. x lines = what to set out.
+function buffetCounts(layout) {
+  const lay = buffetNormLayout(layout); let chafers = 0, rounds = 0, trays = 0;
+  lay.items.forEach(it => { if (it.shape === 'rect') chafers++; else if (it.shape === 'round' || it.shape === 'soup') rounds++; else if (it.shape === 'tray') trays++; });
+  return { chafers, rounds, trays, lines: lay.lines, totalChafers: chafers * lay.lines, totalRounds: rounds * lay.lines };
+}
 
 // Footprint of one placed item after rotation: { w: along the table, d: across }
 function buffetDims(it) {
@@ -108,21 +189,23 @@ function buffetDims(it) {
   return { w, d };
 }
 
-// Put ordered items in a row along the line (auto placement for older layouts / "fill from menu").
+// Put ordered items in a row along the line (auto placement for older layouts / "fill from menu"). Consecutive SMALL items
+// (12 in or less: dressings, soups, small bowls) stand side by side ACROSS the table as long as they fit its 30 in depth.
 function buffetAutoPlace(items, sides) {
-  const G = BUFFET_GAP; let x = G, slot = [];
+  const G = BUFFET_GAP, DEP = BUFFET_TABLE_DEP; let x = G, slot = [], span = 0;
+  const isSmall = it => { const q = buffetDims(Object.assign({}, it, { rot: 0 })); return Math.max(q.w, q.d) <= 12; };
   const flush = () => {
     if (!slot.length) return;
     const dm = slot.map(buffetDims), along = Math.max.apply(null, dm.map(a => a.w));
-    const span = dm.reduce((a, b) => a + b.d, 0) + (slot.length - 1) * G;
-    let y = sides === 1 ? 3 : BUFFET_TABLE_DEP / 2 - span / 2;
+    const tot = dm.reduce((a, b) => a + b.d, 0) + (slot.length - 1) * G;
+    let y = sides === 1 ? 3 : DEP / 2 - tot / 2;
     slot.forEach((it, k) => { it.x = x + along / 2; it.y = y + dm[k].d / 2; y += dm[k].d + G; it.rot = it.rot || 0; });
-    x += along + G; slot = [];
+    x += along + G; slot = []; span = 0;
   };
   items.forEach(it => {
-    const s = buffetShape(it);
-    if (slot.length && slot[0].shape === it.shape && slot.length < s.cluster) { slot.push(it); return; }
-    flush(); slot = [it];
+    const q = buffetDims(it);
+    if (slot.length && isSmall(slot[0]) && isSmall(it) && span + G + q.d <= DEP - (sides === 1 ? 3 : 0)) { slot.push(it); span += G + q.d; return; }
+    flush(); slot = [it]; span = q.d;
   });
   flush();
   return items;
@@ -168,74 +251,93 @@ function buffetFit(layout) {
 }
 
 // One shape. w/d = footprint (inches, already rotated); S = units per inch; sw = stroke width.
-function buffetShapeSvg(shape, w, d, cx, cy, S, sw) {
+function buffetShapeSvg(shape, w, d, cx, cy, S, sw, split, lengthwise) {
   sw = sw || 1.6;
   const base = `stroke="currentColor" stroke-width="${sw}"`, W = w * S, D = d * S;
   if (shape === 'round') return `<circle cx="${cx}" cy="${cy}" r="${W / 2}" fill="rgba(128,128,128,.14)" ${base}/><circle cx="${cx}" cy="${cy}" r="${W / 2 * 0.68}" fill="none" stroke="currentColor" stroke-width="${sw * 0.6}"/>`;
   if (shape === 'soup') return `<circle cx="${cx}" cy="${cy}" r="${W / 2}" fill="rgba(128,128,128,.38)" ${base}/>`;
   if (shape === 'bowl') return `<circle cx="${cx}" cy="${cy}" r="${W / 2}" fill="rgba(128,128,128,.08)" ${base} stroke-dasharray="${sw * 3} ${sw * 2}"/>`;
+  if (shape === 'tray') return `<rect x="${cx - W / 2}" y="${cy - D / 2}" width="${W}" height="${D}" rx="1" fill="rgba(255,255,255,.55)" ${base} stroke-dasharray="${sw * 3} ${sw * 2}"/><rect x="${cx - W / 2 + sw * 2.2}" y="${cy - D / 2 + sw * 2.2}" width="${Math.max(1, W - sw * 4.4)}" height="${Math.max(1, D - sw * 4.4)}" fill="none" stroke="currentColor" stroke-width="${sw * 0.5}" stroke-dasharray="${sw} ${sw}" opacity=".7"/>`;
+  if (shape === 'tub') return `<rect x="${cx - W / 2}" y="${cy - D / 2}" width="${W}" height="${D}" rx="${Math.min(4, sw * 2.5)}" fill="rgba(128,128,128,.10)" ${base}/><rect x="${cx - W / 2 + sw * 2.4}" y="${cy - D / 2 + sw * 2.4}" width="${Math.max(1, W - sw * 4.8)}" height="${Math.max(1, D - sw * 4.8)}" rx="${sw}" fill="none" stroke="currentColor" stroke-width="${sw * 0.6}"/>`;
+  if (shape === 'plates') return `<circle cx="${cx}" cy="${cy}" r="${W / 2}" fill="rgba(255,255,255,.7)" ${base}/><circle cx="${cx}" cy="${cy}" r="${W / 2 * 0.78}" fill="none" stroke="currentColor" stroke-width="${sw * 0.6}"/><circle cx="${cx}" cy="${cy}" r="${W / 2 * 0.5}" fill="none" stroke="currentColor" stroke-width="${sw * 0.6}"/>`;
+  if (shape === 'fruit') return `<circle cx="${cx}" cy="${cy}" r="${W / 2}" fill="rgba(128,128,128,.20)" ${base}/>`;
   if (shape === 'dressing') return `<circle cx="${cx}" cy="${cy}" r="${Math.max(W / 2, sw * 2.5)}" fill="rgba(128,128,128,.30)" ${base}/>`;
-  return `<rect x="${cx - W / 2}" y="${cy - D / 2}" width="${W}" height="${D}" rx="${Math.min(3, sw * 2)}" fill="rgba(128,128,128,.14)" ${base}/>`;
+  let out = `<rect x="${cx - W / 2}" y="${cy - D / 2}" width="${W}" height="${D}" rx="${Math.min(3, sw * 2)}" fill="rgba(128,128,128,.14)" ${base}/>`;
+  if (shape === 'rect' && split > 1) {            // pan dividers: across the long side (or along it for lengthwise halves)
+    const ln = (x1, y1, x2, y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="currentColor" stroke-width="${sw * 0.8}"/>`;
+    const tall = D >= W;
+    if (lengthwise && split === 2) out += tall ? ln(cx, cy - D / 2, cx, cy + D / 2) : ln(cx - W / 2, cy, cx + W / 2, cy);
+    else for (let k = 1; k < split; k++) out += tall ? ln(cx - W / 2, cy - D / 2 + D * k / split, cx + W / 2, cy - D / 2 + D * k / split) : ln(cx - W / 2 + W * k / split, cy - D / 2, cx - W / 2 + W * k / split, cy + D / 2);
+  }
+  return out;
 }
 
-// SVG drawn to scale (1 inch = S units): the whole line of tables in one straight row. Big single items carry their number
-// inside; small ones (and side-by-side groups, e.g. "4-6") get a tag above/below with a short leader. What goes in each item
-// is in the numbered key under the drawing (buffetHtml).
+// SVG drawn to scale (1 inch = S units). The line of tables is drawn in rows of up to 6 tables (a normal 6-table line is ONE
+// straight row; an over-long line wraps so nothing shrinks). Big single items carry their number inside; small ones (and
+// side-by-side groups, e.g. "4-6") get a tag above/below with a short leader. What goes in each item is in the numbered
+// key under the drawing (buffetHtml).
+const BUFFET_ROW_TABLES = 6;
 function buffetSvg(layout, L) {
   L = L || {};
   const { lay, arr } = buffetOrdered(layout), fit = buffetFit(lay), sides = lay.sides;
-  const CW = 540, PADL = 12, PADR = 12, HEAD = 18, TAG = 22, WALL = sides === 1 ? 6 : 0, R = 7.5;
-  const drawTables = Math.max(lay.tables, fit.need);
-  const S = Math.min(3.4, CW / (drawTables * BUFFET_TABLE_LEN)), TD = BUFFET_TABLE_DEP * S;
-  const W = PADL + drawTables * BUFFET_TABLE_LEN * S + PADR;
+  const CW = 540, PADL = 12, PADR = 12, HEAD = 18, TAG = 22, WALL = sides === 1 ? 6 : 0, R = 7.5, ROWGAP = 12;
+  const drawTables = Math.max(lay.tables, fit.need), rowsN = Math.ceil(drawTables / BUFFET_ROW_TABLES), rowLen = BUFFET_ROW_TABLES * BUFFET_TABLE_LEN;
+  const S = Math.min(3.4, CW / (Math.min(drawTables, BUFFET_ROW_TABLES) * BUFFET_TABLE_LEN)), TD = BUFFET_TABLE_DEP * S;
+  const W = PADL + Math.min(drawTables, BUFFET_ROW_TABLES) * BUFFET_TABLE_LEN * S + PADR;
   const overTxt = typeof L.over === 'function' ? L.over(fit.need) : `OVER CAPACITY - needs ${fit.need} tables`;
-  // group side-by-side items (same spot along the line) so they share one tag
-  const groups = [];
-  arr.forEach(a => { const g = groups[groups.length - 1]; if (g && a.cx - g.items[g.items.length - 1].cx <= 3) g.items.push(a); else groups.push({ items: [a] }); });
-  const occ = { up: [], dn: [] }, maxLev = sides === 2 ? 2 : 3; let prev = 'dn', upLv = 0, dnLv = 0;
-  groups.forEach(g => {
-    const first = g.items[0], single = g.items.length === 1;
-    g.cx = PADL + g.items.reduce((s, a) => s + a.cx, 0) / g.items.length * S;
-    g.inside = single && first.w * S >= 17 && first.d * S >= 17;
-    if (g.inside) return;
-    g.txt = single ? String(first.n) : `${first.n}-${g.items[g.items.length - 1].n}`;
-    g.tw = Math.max(2 * R, g.txt.length * 6 + 8);
-    const order = sides === 2 ? (prev === 'dn' ? ['up', 'dn'] : ['dn', 'up']) : ['dn'];
-    let best = null;
-    for (let lev = 0; lev < maxLev && !best; lev++) for (const sd of order) {
-      if (occ[sd].every(q => q.lev !== lev || q.r < g.cx - g.tw / 2 - 2 || q.l > g.cx + g.tw / 2 + 2)) { best = { sd, lev }; break; }
-    }
-    if (!best) best = { sd: order[0], lev: maxLev - 1 };
-    occ[best.sd].push({ lev: best.lev, l: g.cx - g.tw / 2, r: g.cx + g.tw / 2 });
-    g.tag = best.sd; g.lev = best.lev; prev = best.sd;
-    if (best.sd === 'up') upLv = Math.max(upLv, best.lev + 1); else dnLv = Math.max(dnLv, best.lev + 1);
-  });
-  const upH = upLv * TAG, dnH = dnLv * TAG;
-  const tTop = HEAD + upH + WALL, tBot = tTop + TD, tw = lay.tables * BUFFET_TABLE_LEN * S;
-  let g = '';
-  g += `<rect x="${PADL}" y="${tTop}" width="${tw}" height="${TD}" rx="2" fill="rgba(128,128,128,.07)" stroke="currentColor" stroke-width="1.6"/>`;
-  for (let j = 1; j < lay.tables; j++) g += `<line x1="${PADL + j * BUFFET_TABLE_LEN * S}" y1="${tTop}" x2="${PADL + j * BUFFET_TABLE_LEN * S}" y2="${tBot}" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>`;
-  if (drawTables > lay.tables) g += `<rect x="${PADL + tw}" y="${tTop}" width="${(drawTables - lay.tables) * BUFFET_TABLE_LEN * S}" height="${TD}" fill="none" stroke="#b8323a" stroke-width="1.6" stroke-dasharray="6 4"/>`;
-  if (sides === 1) g += `<line x1="${PADL - 4}" y1="${tTop - 3}" x2="${PADL + drawTables * BUFFET_TABLE_LEN * S + 4}" y2="${tTop - 3}" stroke="currentColor" stroke-width="4"/>`;
-  g += `<text x="2" y="12" font-size="10" font-weight="700" fill="currentColor">${buffetEsc(L.start || 'START')} ▸</text>`;
-  if (sides === 1) g += `<text x="${PADL + tw}" y="12" font-size="10" text-anchor="end" fill="currentColor">▲ ${buffetEsc(L.wall || 'WALL')}</text>`;
-  if (fit.over) g += `<text x="${PADL + 70}" y="12" font-size="10" font-weight="700" fill="#b8323a">${buffetEsc(overTxt)}</text>`;
-  groups.forEach(gr => {
-    gr.items.forEach(a => {
-      const cx = PADL + a.cx * S, cy = tTop + a.cy * S;
-      g += buffetShapeSvg(a.it.shape, a.w, a.d, cx, cy, S);
-      if (gr.inside) g += `<text x="${cx}" y="${cy + 3.6}" font-size="10" font-weight="700" text-anchor="middle" fill="currentColor">${a.n}</text>`;
+  let g = '', y0 = 0;
+  for (let r = 0; r < rowsN; r++) {
+    const lo = r * rowLen, hi = lo + rowLen, tablesHere = Math.min(BUFFET_ROW_TABLES, drawTables - r * BUFFET_ROW_TABLES);
+    const mine = arr.filter(a => a.cx >= lo && a.cx < hi || (r === rowsN - 1 && a.cx >= hi));
+    // group side-by-side items (same spot along the line) so they share one tag
+    const groups = [];
+    mine.forEach(a => { const gg = groups[groups.length - 1]; if (gg && a.cx - gg.items[gg.items.length - 1].cx <= 3) gg.items.push(a); else groups.push({ items: [a] }); });
+    const occ = { up: [], dn: [] }, maxLev = sides === 2 ? 2 : 3; let prev = 'dn', upLv = 0, dnLv = 0;
+    groups.forEach(gr => {
+      const first = gr.items[0], single = gr.items.length === 1;
+      gr.cx = PADL + (gr.items.reduce((s, a) => s + a.cx, 0) / gr.items.length - lo) * S;
+      gr.inside = single && first.w * S >= 17 && first.d * S >= 17;
+      if (gr.inside) return;
+      gr.txt = single ? String(first.n) : `${first.n}-${gr.items[gr.items.length - 1].n}`;
+      gr.tw = Math.max(2 * R, gr.txt.length * 6 + 8);
+      const order = sides === 2 ? (prev === 'dn' ? ['up', 'dn'] : ['dn', 'up']) : ['dn'];
+      let best = null;
+      for (let lev = 0; lev < maxLev && !best; lev++) for (const sd of order) {
+        if (occ[sd].every(q => q.lev !== lev || q.r < gr.cx - gr.tw / 2 - 2 || q.l > gr.cx + gr.tw / 2 + 2)) { best = { sd, lev }; break; }
+      }
+      if (!best) best = { sd: order[0], lev: maxLev - 1 };
+      occ[best.sd].push({ lev: best.lev, l: gr.cx - gr.tw / 2, r: gr.cx + gr.tw / 2 });
+      gr.tag = best.sd; gr.lev = best.lev; prev = best.sd;
+      if (best.sd === 'up') upLv = Math.max(upLv, best.lev + 1); else dnLv = Math.max(dnLv, best.lev + 1);
     });
-    if (!gr.inside) {
-      const top = tTop + Math.min.apply(null, gr.items.map(a => a.cy - a.d / 2)) * S, bot = tTop + Math.max.apply(null, gr.items.map(a => a.cy + a.d / 2)) * S;
-      const edge = gr.tag === 'up' ? top : bot;
-      const ty = gr.tag === 'up' ? tTop - R - 4 - gr.lev * TAG : tBot + R + 4 + gr.lev * TAG;
-      g += `<line x1="${gr.cx}" y1="${edge}" x2="${gr.cx}" y2="${ty + (gr.tag === 'up' ? R : -R)}" stroke="currentColor" stroke-width=".8" opacity=".7"/>`;
-      g += `<rect x="${gr.cx - gr.tw / 2}" y="${ty - R}" width="${gr.tw}" height="${2 * R}" rx="${R}" fill="rgba(128,128,128,.22)" stroke="currentColor" stroke-width="1"/>`;
-      g += `<text x="${gr.cx}" y="${ty + 3.4}" font-size="9.5" font-weight="700" text-anchor="middle" fill="currentColor">${gr.txt}</text>`;
-    }
-  });
-  const H = tBot + dnH + 2;
+    const upH = upLv * TAG, dnH = dnLv * TAG;
+    const tTop = y0 + HEAD + upH + WALL, tBot = tTop + TD, rowW = tablesHere * BUFFET_TABLE_LEN * S;
+    const solidT = Math.max(0, Math.min(tablesHere, lay.tables - r * BUFFET_ROW_TABLES)), solidW = solidT * BUFFET_TABLE_LEN * S;
+    if (solidT > 0) g += `<rect x="${PADL}" y="${tTop}" width="${solidW}" height="${TD}" rx="2" fill="rgba(128,128,128,.07)" stroke="currentColor" stroke-width="1.6"/>`;
+    if (solidT < tablesHere) g += `<rect x="${PADL + solidW}" y="${tTop}" width="${rowW - solidW}" height="${TD}" fill="none" stroke="#b8323a" stroke-width="1.6" stroke-dasharray="6 4"/>`;
+    for (let j = 1; j < tablesHere; j++) g += `<line x1="${PADL + j * BUFFET_TABLE_LEN * S}" y1="${tTop}" x2="${PADL + j * BUFFET_TABLE_LEN * S}" y2="${tBot}" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>`;
+    if (sides === 1) g += `<line x1="${PADL - 4}" y1="${tTop - 3}" x2="${PADL + rowW + 4}" y2="${tTop - 3}" stroke="currentColor" stroke-width="4"/>`;
+    g += `<text x="2" y="${y0 + 12}" font-size="10" font-weight="700" fill="currentColor">${r === 0 ? '' : '▸ ' + buffetEsc(L.cont || 'cont.')}</text>`;
+    if (sides === 1) g += `<text x="${PADL + rowW}" y="${y0 + 12}" font-size="10" text-anchor="end" fill="currentColor">▲ ${buffetEsc(L.wall || 'WALL')}</text>`;
+    if (fit.over && r === rowsN - 1) g += `<text x="${PADL + 70}" y="${y0 + 12}" font-size="10" font-weight="700" fill="#b8323a">${buffetEsc(overTxt)}</text>`;
+    groups.forEach(gr => {
+      gr.items.forEach(a => {
+        const cx = PADL + (a.cx - lo) * S, cy = tTop + a.cy * S;
+        g += buffetShapeSvg(a.it.shape, a.w, a.d, cx, cy, S, 0, buffetPansOf(a.it).length, !!a.it.lengthwise);
+        if (gr.inside) g += `<text x="${cx}" y="${cy + 3.6}" font-size="10" font-weight="700" text-anchor="middle" fill="currentColor">${a.n}</text>`;
+      });
+      if (!gr.inside) {
+        const top = tTop + Math.min.apply(null, gr.items.map(a => a.cy - a.d / 2)) * S, bot = tTop + Math.max.apply(null, gr.items.map(a => a.cy + a.d / 2)) * S;
+        const edge = gr.tag === 'up' ? top : bot;
+        const ty = gr.tag === 'up' ? tTop - R - 4 - gr.lev * TAG : tBot + R + 4 + gr.lev * TAG;
+        g += `<line x1="${gr.cx}" y1="${edge}" x2="${gr.cx}" y2="${ty + (gr.tag === 'up' ? R : -R)}" stroke="currentColor" stroke-width=".8" opacity=".7"/>`;
+        g += `<rect x="${gr.cx - gr.tw / 2}" y="${ty - R}" width="${gr.tw}" height="${2 * R}" rx="${R}" fill="rgba(128,128,128,.22)" stroke="currentColor" stroke-width="1"/>`;
+        g += `<text x="${gr.cx}" y="${ty + 3.4}" font-size="9.5" font-weight="700" text-anchor="middle" fill="currentColor">${gr.txt}</text>`;
+      }
+    });
+    y0 = tBot + dnH + ROWGAP;
+  }
+  const H = y0 - ROWGAP + 2;
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="buffet layout">${g}</svg>`;
 }
 
@@ -248,13 +350,15 @@ function buffetHtml(layout, L) {
   const tblTxt = typeof L.tables === 'function' ? L.tables(lay.tables) : `${lay.tables} x 6 ft tables`;
   const linesTxt = lines > 1 ? (typeof L.lines === 'function' ? L.lines(lines) : `Set up ${lines} identical lines`) : '';
   const sideTxt = lay.sides === 2 ? (L.both || 'Double-sided: guests on both sides') : (L.one || 'Single-sided: against a wall');
-  const note = `<div class="buffet-lines">${buffetEsc([linesTxt, tblTxt + (lines > 1 ? ' each' : ''), sideTxt].filter(Boolean).join(' · '))}</div>`;
+  const cnt = buffetCounts(lay);
+  const cntTxt = typeof L.counts === 'function' ? L.counts(cnt.chafers, cnt.rounds) : `Per line: ${cnt.chafers} chafer${cnt.chafers === 1 ? '' : 's'}, ${cnt.rounds} round${cnt.rounds === 1 ? '' : 's'}`;
+  const note = `<div class="buffet-lines">${buffetEsc([linesTxt, tblTxt + (lines > 1 ? ' each' : ''), sideTxt].filter(Boolean).join(' · '))}</div><div class="buffet-legend" style="opacity:1">${buffetEsc(cntTxt)}</div>`;
   const draft = layout.draft ? `<span class="buffet-draft">${buffetEsc(L.draft || 'DRAFT')}</span>` : '';
   const used = {}; lay.items.forEach(it => { used[it.shape] = 1; });
   const names = L.shapes || {};
   const legend = Object.keys(BUFFET_SHAPES).filter(k => used[k] && k !== 'custom').map(k => `${buffetEsc(names[k] || BUFFET_SHAPES[k].name)} ${BUFFET_SHAPES[k].dims}`).join(' · ');
   const scale = `<div class="buffet-legend">${buffetEsc(L.scale || 'Drawn to scale: 6 ft table, 30 in wide')}${legend ? ' — ' + legend : ''}</div>`;
-  const key = arr.length ? `<ol class="buffet-key">${arr.map(a => `<li><b>${a.n}</b><span>${buffetEsc(a.it.label)}</span></li>`).join('')}</ol>` : '';
+  const key = L.pantable ? (arr.length ? buffetPanTableHtml(lay, L) : '') : arr.length ? `<ol class="buffet-key">${arr.map(a => `<li><b>${a.n}</b><span>${buffetEsc(buffetItemText(a.it))}</span></li>`).join('')}</ol>` : '';
   const assign = (lay.assignments || []).filter(a => a && (a.label || a.count != null && a.count !== ''))
     .map(a => `<li><span>${buffetEsc(a.label)}</span><b>${buffetEsc(a.count)}</b></li>`).join('');
   const assignBox = assign ? `<div class="buffet-assign"><div class="buffet-assign-title">${buffetEsc(L.assignments || 'Assignments')}</div><ul>${assign}</ul></div>` : '';
@@ -273,6 +377,14 @@ const BUFFET_CSS = `
 .buffet-key li{display:flex;gap:6px;align-items:baseline;padding:1px 0;break-inside:avoid}
 .buffet-key b{flex:0 0 17px;height:17px;border-radius:50%;border:1px solid currentColor;background:rgba(128,128,128,.22);font-size:10px;line-height:15px;text-align:center}
 .buffet-key span{min-width:0;overflow-wrap:anywhere}
+.bpt-wrap{display:flex;gap:10px;align-items:flex-start;margin:4px 0 6px}
+.bpt{border-collapse:collapse;width:100%;table-layout:fixed;font-size:11px;color:inherit}
+.bpt th:nth-child(2),.bpt td:nth-child(2){width:17%}.bpt th:nth-child(n+3),.bpt td:nth-child(n+3){width:10.5%}
+.bpt td{overflow-wrap:anywhere}
+.bpt th,.bpt td{border:1px solid #888;padding:2px 5px;height:19px;vertical-align:middle}
+.bpt th{background:rgba(128,128,128,.18);font-size:10px;text-align:center}
+.bpt td.c{text-align:center}
+.bpt-split .bpt{font-size:10.5px}.bpt-split .bpt th,.bpt-split .bpt td{padding:1px 4px;height:17px}
 .buffet-assign{max-width:260px;font-size:11px;border:1px solid rgba(128,128,128,.55);border-radius:4px;padding:5px 8px;margin-top:4px}
 .buffet-assign-title{font-weight:700;margin-bottom:2px}
 .buffet-assign ul{list-style:none;margin:0;padding:0}
@@ -290,12 +402,14 @@ const $ = id => document.getElementById(id);
 const esc = buffetEsc;
 const LBL = { start: 'START', assignments: 'Assignments', draft: 'DRAFT', lines: n => `Set up ${n} identical lines` };
 const STORE = 'buffetBuilder.v1';
-let db = { current: null, layouts: {} }, work = null, meta = { title: '', date: '', room: '' }, selIdx = -1, zoom = 4, saveTimer = null;
+let db = { current: null, layouts: {} }, work = null, meta = { title: '', date: '', room: '' }, selIdx = -1, zoom = 4, saveTimer = null, selSet = new Set(), marq = null, panOpen = false, labOpen = false;
+function say(msg) { const h = $('savedHint'); if (h) { h.textContent = msg; } }
+function renderPreview() { renderKey(); }
 
 // ---------- storage (this browser only; everything still works if storage is blocked)
 function loadDb() { try { const d = JSON.parse(localStorage.getItem(STORE) || 'null'); if (d && d.layouts) db = d; } catch (e) {} }
 function persist() { try { localStorage.setItem(STORE, JSON.stringify(db)); $('savedHint').textContent = 'Saved ✓'; } catch (e) { $('savedHint').textContent = 'Could not save in this browser (printing still works).'; } }
-function blank() { return { tables: 6, sides: 2, lines: 1, items: [], assignments: [] }; }
+function blank() { return { tables: 4, sides: 2, lines: 1, items: buffetAutoPlace([1, 2, 3].map(() => ({ shape: 'plates', label: 'Plates' })), 2), assignments: [] }; }
 function newId() { return 'b' + Date.now().toString(36); }
 function touch() {
   $('savedHint').textContent = 'Saving…'; clearTimeout(saveTimer);
@@ -313,10 +427,10 @@ function fillSaved() {
 }
 function openId(id) {
   const rec = db.layouts[id]; if (!rec) return;
-  db.current = id; meta = Object.assign({ title: '', date: '', room: '' }, rec.meta); work = buffetNormLayout(JSON.parse(JSON.stringify(rec.layout)));
+  selSet = new Set(); db.current = id; meta = Object.assign({ title: '', date: '', room: '' }, rec.meta); work = buffetNormLayout(JSON.parse(JSON.stringify(rec.layout)));
   work.assignments = work.assignments || []; selIdx = -1; $('mTitle').value = meta.title; $('mDate').value = meta.date; $('mRoom').value = meta.room; renderBuilder(); renderKey();
 }
-function startNew() { db.current = null; work = blank(); meta = { title: '', date: '', room: '' }; selIdx = -1; $('mTitle').value = $('mDate').value = $('mRoom').value = ''; $('savedHint').textContent = ''; renderBuilder(); renderKey(); }
+function startNew() { selSet = new Set(); db.current = null; work = blank(); meta = { title: '', date: '', room: '' }; selIdx = -1; $('mTitle').value = $('mDate').value = $('mRoom').value = ''; $('savedHint').textContent = ''; renderBuilder(); renderKey(); }
 
 // ---------- items
 function newItem(shape) {
@@ -337,52 +451,78 @@ function overlapSet() {
 }
 function drawCanvas() {
   const svg = $('cv'); if (!svg) return;
+  selSet = new Set([...selSet].filter(j => work.items[j])); if (selSet.size <= 1) selSet = new Set(selIdx >= 0 && work.items[selIdx] ? [selIdx] : []);
   const T = work.tables, LEN = T * 72, ord = buffetOrdered(work), num = {}; ord.arr.forEach(a => { num[a.i] = a.n; });
-  const bad = overlapSet(), EXTRA = 36, vbW = LEN + EXTRA + 16;
+  const bad = overlapSet(), EXTRA = 36, needT = Math.max(T, buffetFit(work).need), EXT = needT * 72, vbW = EXT + EXTRA + 16;
   svg.setAttribute('viewBox', `-8 -14 ${vbW} ${30 + 14 + 24}`);
   svg.style.width = zoom ? Math.round(vbW * zoom) + 'px' : '100%';
-  let g = `<rect x="${LEN}" y="0" width="${EXTRA}" height="30" fill="none" stroke="#b8323a" stroke-width=".6" stroke-dasharray="3 2"/><text x="${LEN + 2}" y="-3" font-size="4.5" fill="#b8323a">past the end of the tables</text>`;
+  let g = `<rect x="${LEN}" y="0" width="${EXT - LEN + EXTRA}" height="30" fill="none" stroke="#b8323a" stroke-width=".6" stroke-dasharray="3 2"/><text x="${EXT + EXTRA}" y="-3" font-size="4.5" text-anchor="end" fill="#b8323a">past the end of the tables${EXT > LEN ? ' (you would need ' + needT + ' tables)' : ''}</text>`;
+  for (let j = T + 1; j <= needT; j++) g += `<line x1="${72 * j}" y1="0" x2="${72 * j}" y2="30" stroke="#b8323a" stroke-width=".4" stroke-dasharray="2 2" opacity=".6"/>`;
   g += `<rect x="0" y="0" width="${LEN}" height="30" rx="1" fill="#fbfbfa" stroke="#1b2430" stroke-width=".9"/>`;
   for (let j = 1; j < T; j++) g += `<line x1="${72 * j}" y1="0" x2="${72 * j}" y2="30" stroke="#1b2430" stroke-width=".4" stroke-dasharray="2 2" opacity=".6"/>`;
-  for (let j = 0; j <= T; j++) g += `<text x="${72 * j}" y="35" font-size="4.5" text-anchor="middle" fill="#667385">${j * 6} ft</text>`;
+  for (let j = 0; j <= needT; j++) g += `<text x="${72 * j}" y="35" font-size="4.5" text-anchor="middle" fill="#667385">${j * 6} ft</text>`;
   if (work.sides === 1) g += `<line x1="-2" y1="-1.5" x2="${LEN + 2}" y2="-1.5" stroke="#1b2430" stroke-width="2.2"/><text x="-6" y="-5" font-size="4.5" fill="#1b2430">WALL ▲</text>`;
-  g += `<text x="-6" y="-10" font-size="5" font-weight="700" fill="#1b2430">START ▸</text>`;
   work.items.forEach((it, i) => {
-    const dm = buffetDims(it), on = i === selIdx, red = bad.has(i);
+    const dm = buffetDims(it), on = selSet.has(i), red = bad.has(i);
     g += `<g class="it" data-i="${i}" style="cursor:grab;color:${red ? '#b8323a' : '#1b2430'}">` + buffetShapeSvg(it.shape, dm.w, dm.d, it.x, it.y, 1, 0.55) +
       `<rect x="${it.x - dm.w / 2 - 1}" y="${it.y - dm.d / 2 - 1}" width="${dm.w + 2}" height="${dm.d + 2}" fill="transparent" ${on ? 'stroke="#1f5f8b" stroke-width="1" stroke-dasharray="2 1.5"' : ''}/>` +
       `<text x="${it.x}" y="${it.y + 1.8}" font-size="${dm.w < 9 ? 4 : 5.5}" font-weight="700" text-anchor="middle" fill="#1b2430" style="pointer-events:none">${num[i]}</text></g>`;
   });
+  if (marq) g += `<rect x="${Math.min(marq.x0, marq.x1)}" y="${Math.min(marq.y0, marq.y1)}" width="${Math.abs(marq.x1 - marq.x0)}" height="${Math.abs(marq.y1 - marq.y0)}" fill="rgba(31,95,139,.12)" stroke="#1f5f8b" stroke-width=".7" stroke-dasharray="2 1.5"/>`;
   svg.innerHTML = g;
+  if (typeof renderPanTable === 'function') { renderPanTable(); if (labOpen) renderLabelBox(); }
 }
 function bindCanvas() {
   const svg = $('cv'); let drag = null;
   const toInches = ev => { const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
+  const hit = (it, r) => { const d = buffetDims(it); return it.x + d.w / 2 >= r.x0 && it.x - d.w / 2 <= r.x1 && it.y + d.d / 2 >= r.y0 && it.y - d.d / 2 <= r.y1; };
   svg.addEventListener('pointerdown', ev => {
-    const g = ev.target.closest('.it'); if (!g) { selIdx = -1; drawCanvas(); renderSelPanel(); return; }
-    const i = parseInt(g.dataset.i, 10), it = work.items[i], p = toInches(ev); selIdx = i; drag = { i, ox: p.x - it.x, oy: p.y - it.y };
+    const g = ev.target.closest('.it'), p = toInches(ev), multi = ev.shiftKey || ev.metaKey || ev.ctrlKey;
+    if (g) {                                                    // on an item: select it (shift/cmd/ctrl adds or removes it) and start moving the whole selection
+      const i = parseInt(g.dataset.i, 10);
+      if (multi) { if (selSet.has(i)) selSet.delete(i); else selSet.add(i); selIdx = i; drawCanvas(); renderSelPanel(); return; }
+      if (!selSet.has(i)) selSet = new Set([i]);
+      selIdx = i; drag = { p0: p, starts: [...selSet].map(j => ({ j, x: work.items[j].x, y: work.items[j].y })) };
+      svg.setPointerCapture(ev.pointerId); drawCanvas(); renderSelPanel(); ev.preventDefault(); return;
+    }
+    marq = { x0: p.x, y0: p.y, x1: p.x, y1: p.y, add: multi, base: new Set(selSet) };   // empty space: drag a box to select several items
+    if (!multi) { selSet = new Set(); selIdx = -1; }
     svg.setPointerCapture(ev.pointerId); drawCanvas(); renderSelPanel(); ev.preventDefault();
   });
   svg.addEventListener('pointermove', ev => {
-    if (!drag) return; const p = toInches(ev), it = work.items[drag.i];
-    const nx = Math.round(p.x - drag.ox), ny = Math.round(p.y - drag.oy);
-    if (nx !== it.x || ny !== it.y) { it.x = Math.max(0, nx); it.y = Math.max(-6, Math.min(36, ny)); touch(); drawCanvas(); renderKey(); }
+    const p = toInches(ev);
+    if (drag) {
+      let dx = Math.round(p.x - drag.p0.x), dy = Math.round(p.y - drag.p0.y);
+      dx = Math.max(dx, -Math.min.apply(null, drag.starts.map(q => q.x)));
+      if (dx !== 0 || dy !== 0 || drag.moved) {
+        drag.moved = true;
+        drag.starts.forEach(q => { const it = work.items[q.j]; it.x = q.x + dx; it.y = Math.max(-6, Math.min(36, q.y + dy)); });
+        touch(); drawCanvas(); renderKey();
+      }
+    } else if (marq) {
+      marq.x1 = p.x; marq.y1 = p.y;
+      const r = { x0: Math.min(marq.x0, marq.x1), x1: Math.max(marq.x0, marq.x1), y0: Math.min(marq.y0, marq.y1), y1: Math.max(marq.y0, marq.y1) };
+      const hits = work.items.map((it, i) => hit(it, r) ? i : -1).filter(i => i >= 0);
+      selSet = new Set(marq.add ? [...marq.base, ...hits] : hits); selIdx = hits.length ? hits[0] : (marq.add ? selIdx : -1); drawCanvas();
+    }
   });
-  const end = () => { if (drag) { drag = null; renderSelPanel(); } };
+  const end = () => { if (drag) { drag = null; renderSelPanel(); } if (marq) { marq = null; drawCanvas(); renderSelPanel(); } };
   svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
   svg.addEventListener('keydown', ev => {
-    if (selIdx < 0) return; const it = work.items[selIdx], st = ev.shiftKey ? 6 : 1; let used = true;
-    if (ev.key === 'ArrowLeft') it.x = Math.max(0, it.x - st); else if (ev.key === 'ArrowRight') it.x += st;
-    else if (ev.key === 'ArrowUp') it.y -= st; else if (ev.key === 'ArrowDown') it.y += st;
-    else if (ev.key === 'Delete' || ev.key === 'Backspace') { work.items.splice(selIdx, 1); selIdx = -1; }
+    const sel = [...selSet].filter(j => work.items[j]); if (!sel.length) return; const st = ev.shiftKey ? 6 : 1; let used = true;
+    const mv = (dx, dy) => sel.forEach(j => { const it = work.items[j]; it.x = Math.max(0, it.x + dx); it.y += dy; });
+    if (ev.key === 'ArrowLeft') mv(-st, 0); else if (ev.key === 'ArrowRight') mv(st, 0);
+    else if (ev.key === 'ArrowUp') mv(0, -st); else if (ev.key === 'ArrowDown') mv(0, st);
+    else if (ev.key === 'Delete' || ev.key === 'Backspace') { sel.sort((a, b) => b - a).forEach(j => work.items.splice(j, 1)); selIdx = -1; selSet = new Set(); }
     else used = false;
     if (used) { ev.preventDefault(); touch(); drawCanvas(); renderKey(); renderSelPanel(); }
   });
 }
 function renderSelPanel() {
   const p = $('selPanel'); if (!p) return;
+  if (selSet.size > 1) { p.innerHTML = `<div class="bar" style="margin:0"><b>${selSet.size} items selected</b><span class="hint">Drag any one of them to move them all together; arrow keys nudge them all (Shift: 6 in).</span><button class="sm danger" id="grpDel">Delete these ${selSet.size}</button></div>`; $('grpDel').onclick = () => { [...selSet].sort((a, b) => b - a).forEach(j => work.items.splice(j, 1)); selIdx = -1; selSet = new Set(); touch(); drawCanvas(); renderKey(); renderSelPanel(); }; return; }
   const it = work.items[selIdx];
-  if (!it) { p.innerHTML = '<span class="hint">Click an item on the table to select it, then drag it to move it. Arrow keys nudge it 1 inch (Shift: 6 inches); Delete removes it.</span>'; return; }
+  if (!it) { p.innerHTML = '<span class="hint">Click an item on the table to select it, then drag it. To move several at once: drag a box around them on empty table space (or Shift-click each one). Arrow keys nudge (Shift: 6 in); Delete removes.</span>'; return; }
   const n = (buffetOrdered(work).arr.find(a => a.i === selIdx) || {}).n;
   p.innerHTML = `<b>#${n} &middot; ${BUFFET_SHAPES[it.shape].name}</b> <input id="selLabel" value="${esc(it.label)}" placeholder="What goes in it (e.g. BBQ pork)" style="flex:1;min-width:240px">` +
     `<button class="sm" id="selRot">⟳ Turn 90°</button><button class="sm" id="selDup">Duplicate</button><button class="sm danger" id="selDel">Delete</button>` +
@@ -406,7 +546,7 @@ function renderBuilder() {
   $('lines').oninput = ev => { work.lines = Math.max(1, parseInt(ev.target.value, 10) || 1); touch(); renderKey(); };
   const fitEl = document.createElement('div'); fitEl.id = 'fit'; fitEl.className = 'hint'; fitEl.style.marginBottom = '6px'; b.appendChild(fitEl);
   const pal = document.createElement('div'); pal.className = 'bar'; pal.innerHTML = '<b>Add to the table:</b>';
-  [['rect', 'Chafer'], ['round', 'Round chafer'], ['soup', 'Soup'], ['bowl', 'Salad bowl'], ['dressing', 'Dressing (6 in)'], ['custom', 'Other size…']].forEach(([shape, txt]) => {
+  [['rect', 'Chafer'], ['round', 'Round chafer'], ['soup', 'Soup'], ['bowl', 'Salad bowl'], ['fruit', 'Fruit bowl (12 in)'], ['tray', 'Tray / pan (no chafer)'], ['plates', 'Plates'], ['tub', 'Roll-ups (bus tub)'], ['dressing', 'Dressing (6 in)'], ['custom', 'Other size…']].forEach(([shape, txt]) => {
     const bt = document.createElement('button'); bt.className = 'sm'; bt.textContent = '+ ' + txt;
     bt.onclick = () => { if (newItem(shape)) { drawCanvas(); renderKey(); renderSelPanel(); const l = $('selLabel'); if (l) l.focus(); } }; pal.appendChild(bt);
   });
@@ -416,6 +556,13 @@ function renderBuilder() {
   wrap.innerHTML = '<svg id="cv" tabindex="0" style="height:auto;display:block;touch-action:none;outline:none;-webkit-user-select:none;user-select:none"></svg>';
   b.appendChild(wrap);
   const sp = document.createElement('div'); sp.id = 'selPanel'; sp.className = 'bar'; sp.style.alignItems = 'center'; b.appendChild(sp);
+  const pb = document.createElement('details'); pb.id = 'panBox'; pb.style.margin = '8px 0'; pb.open = panOpen;
+  pb.innerHTML = '<summary><b>Pan counts</b> <span class="hint">(initial set, added during the event, leftover; prints under the drawing)</span></summary><div id="panTable" style="margin-top:6px"></div><div class="bar"><button class="sm" id="copyPans">Copy table for Excel</button><span class="hint" id="copyHint"></span></div>';
+  b.appendChild(pb); pb.ontoggle = () => { panOpen = pb.open; };
+  const lb = document.createElement('details'); lb.id = 'labBox'; lb.style.margin = '8px 0'; lb.open = labOpen;
+  lb.innerHTML = `<summary><b>Label cards</b> <span class="hint">(2 x 4 in cards, 10 per sheet: one per dish; untick the ones you already have)</span></summary><div class="bar" style="margin:6px 0"><button class="primary sm" id="labPrint">🖨 Print the cards</button><button class="sm" id="labTest">Print a test sheet (outlines only)</button><label class="hint"><input type="checkbox" id="labOutline"> thin outline on each card</label><b id="labelCount" class="hint"></b></div><div id="labelTable"></div><div id="labelPrev" style="margin-top:8px"></div>`;
+  b.appendChild(lb); lb.ontoggle = () => { labOpen = lb.open; if (lb.open) renderLabelBox(); };
+  $('labPrint').onclick = () => printLabels(false); $('labTest').onclick = () => printLabels(true); if (lb.open) setTimeout(renderLabelBox, 0); if (document.fonts && document.fonts.load) document.fonts.load('800 40px Nunito').then(() => { if (labOpen) renderLabelBox(); });
   const ad = document.createElement('details'); ad.style.marginTop = '12px'; ad.open = !!work.assignments.length;
   ad.innerHTML = '<summary><b>Assignments</b> <span class="hint">(optional: label + number, e.g. Carvers 2)</span></summary>'; b.appendChild(ad);
   work.assignments.forEach((a, i) => {
@@ -430,8 +577,85 @@ function renderBuilder() {
   add.onclick = () => { work.assignments.push({ label: '', count: '' }); touch(); renderBuilder(); }; ad.appendChild(add);
   bindCanvas(); drawCanvas(); renderSelPanel();
 }
+
+function renderPanTable() {
+  const box = $('panTable'); if (!box) return;
+  const rows = buffetPanRows(work);
+  box.innerHTML = '<table class="pt"><thead><tr><th>Menu items</th><th>Pan size</th><th>Initial buffet set</th><th>Added during event</th><th>Leftover (end pan count)</th><th>Total pans served</th></tr></thead><tbody>' +
+    rows.map((r, ri) => `<tr data-ri="${ri}"><td class="l">${esc(r.label)}</td><td><input data-f="size" value="${esc(r.size)}"></td>` +
+      ['initial', 'added', 'left'].map(f => `<td><input type="number" min="0" max="999" data-f="${f}" value="${r[f] == null ? '' : r[f]}"></td>`).join('') + `<td class="tot">${r.total == null ? '' : r.total}</td></tr>`).join('') + '</tbody></table>' +
+    (rows.length ? '' : '<div class="hint">Add food to the table and its pans show up here.</div>');
+  box.querySelectorAll('tr[data-ri]').forEach(tr => {
+    const r = rows[parseInt(tr.dataset.ri, 10)], tgt = r.multi ? work.items[r.i].pans[r.k] : work.items[r.i];
+    tr.querySelectorAll('input').forEach(inp => { inp.oninput = () => {
+      const f = inp.dataset.f;
+      if (f === 'size') { if (inp.value && inp.value !== buffetPanSize(work.items[r.i], buffetPansOf(work.items[r.i]).length)) tgt.size = inp.value; else delete tgt.size; }
+      else if (inp.value === '') delete tgt[f]; else tgt[f] = Math.max(0, Math.min(999, parseInt(inp.value, 10) || 0));
+      const nr = buffetPanRows(work).find(q => q.key === r.key); tr.querySelector('.tot').textContent = nr && nr.total != null ? nr.total : '';
+      touch(); renderPreview(); }; });
+  });
+}
+// ---- Label cards (2 x 4 in, 10 per sheet): one per distinct dish, short names, only the ones ticked.
+function autoCard(label) {
+  let s = String(label || '').replace(/\([^)]*\)/g, ' ').replace(/\s+-\s.*$/, '').replace(/^[^:]{1,40}:\s*/, '').replace(/,.*$/, '').replace(/\s+/g, ' ').trim();
+  const small = new Set(['and', 'of', 'the', 'w/', 'with', 'a', 'in', 'for', 'on', 'de', 'au', 'la']);
+  return s.split(' ').map((w, i) => (i > 0 && small.has(w.toLowerCase())) ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+}
+function cardRows() {
+  return buffetPanRows(work).map(r => { const tgt = r.multi ? work.items[r.i].pans[r.k] : work.items[r.i];
+    return { r, tgt, text: (tgt.card != null && tgt.card !== '') ? tgt.card : autoCard(r.label), on: tgt.cardOff !== true, copies: Number.isInteger(tgt.copies) ? tgt.copies : 1 }; });
+}
+function renderLabelBox() {
+  const box = $('labelTable'); if (!box) return; const rows = cardRows();
+  box.innerHTML = '<table class="pt"><thead><tr><th>Print</th><th>Card says</th><th>Copies</th><th>From the menu</th></tr></thead><tbody>' +
+    rows.map((c, ri) => `<tr data-ri="${ri}"><td><input type="checkbox" data-f="on" ${c.on ? 'checked' : ''}></td><td><input data-f="card" value="${esc(c.text)}"></td><td><input type="number" min="0" max="99" data-f="copies" value="${c.copies}" style="max-width:70px"></td><td class="l hint">${esc(c.r.label)}${cardTooLong(c.text) ? ' <b style="color:#b8323a">&mdash; too long: will print smaller. Shorten the card text.</b>' : ''}</td></tr>`).join('') + '</tbody></table>' +
+    (rows.length ? '' : '<div class="hint">Add food to the table and its cards show up here.</div>');
+  box.querySelectorAll('tr[data-ri]').forEach(tr => { const c = rows[parseInt(tr.dataset.ri, 10)];
+    tr.querySelectorAll('input').forEach(inp => { inp.oninput = inp.onchange = () => { const f = inp.dataset.f;
+      if (f === 'on') { if (inp.checked) delete c.tgt.cardOff; else c.tgt.cardOff = true; }
+      else if (f === 'card') { if (inp.value && inp.value !== autoCard(c.r.label)) c.tgt.card = inp.value; else delete c.tgt.card; }
+      else { const n = Math.max(0, Math.min(99, parseInt(inp.value, 10) || 0)); if (n === 1) delete c.tgt.copies; else c.tgt.copies = n; }
+      touch(); renderLabelPreview(); }; }); });
+  renderLabelPreview();
+}
+function labelTexts() { const out = []; cardRows().forEach(c => { if (c.on) for (let k = 0; k < c.copies; k++) out.push(c.text); }); return out; }
+function labelPagesHtml(texts, opts) {
+  const pages = []; for (let i = 0; i < Math.max(texts.length, 1); i += 10) pages.push(texts.slice(i, i + 10));
+  return pages.map((p, pi) => '<div class="lpage">' + Array.from({ length: 10 }, (_, k) => p[k] != null
+    ? `<div class="lcard${opts.outline ? ' ol' : ''}"><div class="ltxt">${esc(p[k])}</div></div>` : '<div class="lcard"></div>').join('') + '</div>').join('');
+}
+// Every card uses the SAME size (40 px). Names wrap onto 2-3 lines; only a name too long even for that shrinks (and is flagged in the list).
+const CARD_PX = 40;
+function fitCards(root) {
+  root.querySelectorAll('.lcard .ltxt').forEach(t => { const card = t.parentElement; let px = CARD_PX; t.style.fontSize = px + 'px';
+    const maxW = card.clientWidth - 0.4 * 96, maxH = card.clientHeight - 0.28 * 96;
+    while (px > 14 && (t.scrollHeight > maxH || t.scrollWidth > maxW)) { px -= 2; t.style.fontSize = px + 'px'; } });
+}
+let _meas = null;
+function cardTooLong(text) {                                   // would this name have to shrink below the standard size?
+  if (!_meas) { _meas = document.createElement('div'); _meas.className = 'lcard'; _meas.style.cssText = 'position:fixed;left:-99999px;top:0;visibility:hidden'; _meas.innerHTML = '<div class="ltxt"></div>'; document.body.appendChild(_meas); }
+  const t = _meas.firstChild; t.textContent = text; t.style.fontSize = CARD_PX + 'px';
+  return t.scrollHeight > _meas.clientHeight - 0.28 * 96 || t.scrollWidth > _meas.clientWidth - 0.4 * 96;
+}
+function renderLabelPreview() {                                  // every sheet, side by side, so you can see it is all there
+  const pv = $('labelPrev'); if (!pv) return; const texts = labelTexts(), n = texts.length, sheets = Math.ceil(n / 10);
+  $('labelCount').textContent = n ? `${n} card${n === 1 ? '' : 's'} = ${sheets} sheet${sheets === 1 ? '' : 's'}` : 'nothing ticked';
+  let h = ''; for (let s = 0; s < sheets; s++) h += `<figure class="lsheet"><div class="lwrap"><div class="lscale">${labelPagesHtml(texts.slice(s * 10, s * 10 + 10), { outline: true })}</div></div><figcaption class="hint">Sheet ${s + 1} of ${sheets} &middot; ${Math.min(10, n - s * 10)} card${Math.min(10, n - s * 10) === 1 ? '' : 's'}</figcaption></figure>`;
+  pv.innerHTML = h; fitCards(pv);
+}
+function fitCardsVisible(root) { fitCards(root); }
+async function printLabels(test) {
+  try { await document.fonts.load("800 40px Nunito"); await document.fonts.ready; } catch (x) {}
+  const s = $('labelSheet'), texts = test ? [] : labelTexts(); if (!test && !texts.length) { say('Nothing is ticked to print.', true); return; }
+  s.innerHTML = test ? '<div class="lpage">' + Array.from({ length: 10 }, (_, k) => `<div class="lcard test">card ${k + 1} of 10 &mdash; 4 x 2 in. Print this on plain paper at 100% and hold it over a real sheet to check the cut lines.</div>`).join('') + '</div>'
+    : labelPagesHtml(texts, { outline: $('labOutline') && $('labOutline').checked });
+  s.style.cssText = 'display:block;position:fixed;left:-99999px;top:0;visibility:hidden'; fitCards(s); s.style.cssText = '';
+  $('pageStyle').textContent = '@page{size:letter portrait;margin:0}';
+  document.body.classList.add('printing-labels'); window.print();
+}
+
 function renderKey() {
-  $('keyBox').innerHTML = buffetHtml(work, LBL) || '<span class="hint">Add something to the table to see it here.</span>';
+  $('keyBox').innerHTML = buffetHtml(work, Object.assign({}, LBL, { pantable: true })) || '<span class="hint">Add something to the table to see it here.</span>';
   const f = $('fit'); if (f) {
     const x = buffetFit(work), bits = [];
     bits.push(x.over ? `<b style="color:var(--warn)">Runs past the tables: needs ${x.need}, you have ${x.tables}.</b>` : `Fits on the tables (uses about ${x.need} of ${x.tables}).`);
@@ -441,12 +665,17 @@ function renderKey() {
   }
 }
 function printNow() {
-  let s = $('printSheet');
-  const heads = [meta.date, meta.room].filter(Boolean).map(esc).join(' · ');
-  s.innerHTML = `<div class="bps-head"><h2>${esc(meta.title || 'Buffet line')}</h2><div>${heads}<br>Buffet layout</div></div>` + buffetHtml(work, LBL);
+  const s = $('printSheet'), heads = [meta.date, meta.room].filter(Boolean).map(esc).join(' &middot; ');
+  s.innerHTML = `<div class="bps-head"><h2>${esc(meta.title || 'Buffet line')}</h2><div>${heads}<br>Buffet layout</div></div>` + buffetHtml(work, Object.assign({}, LBL, { pantable: true }));
+  const nrows = buffetPanRows(work).length; s.classList.toggle('mid', nrows > 14 && nrows <= 18); s.classList.toggle('dense', nrows > 36);
+  // Fit one landscape page: measure at the printed width; shrink a little if it overflows (very long builds continue on page 2).
+  s.style.zoom = ''; s.style.cssText += ';display:block;position:fixed;left:-99999px;top:0;width:10.3in;visibility:hidden';
+  const h = s.getBoundingClientRect().height, avail = 7.7 * 96;
+  s.style.cssText = ''; if (h > avail && nrows <= 30) s.style.zoom = String(Math.max(0.72, avail / h).toFixed(3));
+  $('pageStyle').textContent = '@page{size:landscape;margin:0}';
   document.body.classList.add('printing'); window.print();
 }
-window.addEventListener('afterprint', () => document.body.classList.remove('printing'));
+window.addEventListener('afterprint', () => document.body.classList.remove('printing', 'printing-labels'));
 
 // ---------- wiring
 ['mTitle', 'mDate', 'mRoom'].forEach(id => { $(id).oninput = () => { meta.title = $('mTitle').value; meta.date = $('mDate').value; meta.room = $('mRoom').value; touch(); }; });
