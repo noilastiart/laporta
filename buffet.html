@@ -52,6 +52,7 @@ details>summary{cursor:pointer;color:var(--accent)}
   .bps-head h2{margin:0;font-size:19px}.bps-head div{font-size:12px;color:#333;text-align:right}
   #printSheet .buffet-diagram svg{width:100%;max-height:3.5in}
   #printSheet .buffet-key{columns:3;font-size:13px}
+  #printSheet .bpt-layout .buffet-key{columns:1;font-size:11px}#printSheet .bpt-layout .buffet-key b{flex:0 0 17px;height:17px;line-height:15px;font-size:10px}#printSheet .bpt-stack .buffet-key{columns:4;font-size:9.5px}#printSheet .bpt-stack .buffet-key b{flex:0 0 15px;height:15px;line-height:13px;font-size:9px}
   #printSheet.dense .buffet-key{columns:5;font-size:9.5px;column-gap:10px}
   #printSheet.dense .buffet-diagram svg{max-height:3.1in}
   #printSheet .buffet-key b{flex:0 0 20px;height:20px;line-height:18px;font-size:12px}
@@ -358,7 +359,9 @@ function buffetHtml(layout, L) {
   const names = L.shapes || {};
   const legend = Object.keys(BUFFET_SHAPES).filter(k => used[k] && k !== 'custom').map(k => `${buffetEsc(names[k] || BUFFET_SHAPES[k].name)} ${BUFFET_SHAPES[k].dims}`).join(' · ');
   const scale = `<div class="buffet-legend">${buffetEsc(L.scale || 'Drawn to scale: 6 ft table, 30 in wide')}${legend ? ' — ' + legend : ''}</div>`;
-  const key = L.pantable ? (arr.length ? buffetPanTableHtml(lay, L) : '') : arr.length ? `<ol class="buffet-key">${arr.map(a => `<li><b>${a.n}</b><span>${buffetEsc(buffetItemText(a.it))}</span></li>`).join('')}</ol>` : '';
+  const keyList = arr.length ? `<ol class="buffet-key">${arr.map(a => `<li><b>${a.n}</b><span>${buffetEsc(buffetItemText(a.it))}</span></li>`).join('')}</ol>` : '';
+  // Pan-count print: the numbered list (so the numbers on the drawing mean something) sits beside the pan table; long builds stack them.
+  const key = L.pantable ? (arr.length ? `<div class="bpt-layout${buffetPanRows(lay).length > 18 ? ' bpt-stack' : ''}"><div class="bpt-keycol">${keyList}</div><div class="bpt-tablecol">${buffetPanTableHtml(lay, L)}</div></div>` : '') : keyList;
   const assign = (lay.assignments || []).filter(a => a && (a.label || a.count != null && a.count !== ''))
     .map(a => `<li><span>${buffetEsc(a.label)}</span><b>${buffetEsc(a.count)}</b></li>`).join('');
   const assignBox = assign ? `<div class="buffet-assign"><div class="buffet-assign-title">${buffetEsc(L.assignments || 'Assignments')}</div><ul>${assign}</ul></div>` : '';
@@ -378,6 +381,9 @@ const BUFFET_CSS = `
 .buffet-key b{flex:0 0 17px;height:17px;border-radius:50%;border:1px solid currentColor;background:rgba(128,128,128,.22);font-size:10px;line-height:15px;text-align:center}
 .buffet-key span{min-width:0;overflow-wrap:anywhere}
 .bpt-wrap{display:flex;gap:10px;align-items:flex-start;margin:4px 0 6px}
+.bpt-layout{display:flex;gap:14px;align-items:flex-start}.bpt-keycol{flex:0 0 36%}.bpt-tablecol{flex:1;min-width:0}
+.bpt-layout .buffet-key{columns:1;margin:4px 0 0}.bpt-layout.bpt-stack{display:block}.bpt-stack .bpt-keycol{width:100%}.bpt-stack .buffet-key{columns:4;column-gap:12px}.bpt-stack .bpt-tablecol{margin-top:6px}
+.bpt-tablecol .bpt-wrap{margin-top:4px}
 .bpt{border-collapse:collapse;width:100%;table-layout:fixed;font-size:11px;color:inherit}
 .bpt th:nth-child(2),.bpt td:nth-child(2){width:17%}.bpt th:nth-child(n+3),.bpt td:nth-child(n+3){width:10.5%}
 .bpt td{overflow-wrap:anywhere}
@@ -472,6 +478,19 @@ function drawCanvas() {
   svg.innerHTML = g;
   if (typeof renderPanTable === 'function') { renderPanTable(); if (labOpen) renderLabelBox(); }
 }
+// Keyboard on the table (arrows nudge, Delete/Backspace removes the selection). Listens on the whole page, but never while you are typing in a box.
+function canvasKey(ev) {
+  const tg = ev.target; if (tg && (/^(input|textarea|select)$/i.test(tg.tagName) || tg.isContentEditable)) return;
+  if (!document.getElementById('cv') || !work) return; const m = document.getElementById('askModal'); if (m && m.style.display === 'flex') return;
+    const sel = [...selSet].filter(j => work.items[j]); if (!sel.length) return; const st = ev.shiftKey ? 6 : 1; let used = true;
+    const mv = (dx, dy) => sel.forEach(j => { const it = work.items[j]; it.x = Math.max(0, it.x + dx); it.y += dy; });
+    if (ev.key === 'ArrowLeft') mv(-st, 0); else if (ev.key === 'ArrowRight') mv(st, 0);
+    else if (ev.key === 'ArrowUp') mv(0, -st); else if (ev.key === 'ArrowDown') mv(0, st);
+    else if (ev.key === 'Delete' || ev.key === 'Backspace') { sel.sort((a, b) => b - a).forEach(j => work.items.splice(j, 1)); selIdx = -1; selSet = new Set(); }
+    else used = false;
+    if (used) { ev.preventDefault(); touch(); drawCanvas(); renderKey(); renderSelPanel(); }
+}
+if (!window._canvasKeyBound) { document.addEventListener('keydown', canvasKey); window._canvasKeyBound = true; }
 function bindCanvas() {
   const svg = $('cv'); let drag = null;
   const toInches = ev => { const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
@@ -508,15 +527,7 @@ function bindCanvas() {
   });
   const end = () => { if (drag) { drag = null; renderSelPanel(); } if (marq) { marq = null; drawCanvas(); renderSelPanel(); } };
   svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
-  svg.addEventListener('keydown', ev => {
-    const sel = [...selSet].filter(j => work.items[j]); if (!sel.length) return; const st = ev.shiftKey ? 6 : 1; let used = true;
-    const mv = (dx, dy) => sel.forEach(j => { const it = work.items[j]; it.x = Math.max(0, it.x + dx); it.y += dy; });
-    if (ev.key === 'ArrowLeft') mv(-st, 0); else if (ev.key === 'ArrowRight') mv(st, 0);
-    else if (ev.key === 'ArrowUp') mv(0, -st); else if (ev.key === 'ArrowDown') mv(0, st);
-    else if (ev.key === 'Delete' || ev.key === 'Backspace') { sel.sort((a, b) => b - a).forEach(j => work.items.splice(j, 1)); selIdx = -1; selSet = new Set(); }
-    else used = false;
-    if (used) { ev.preventDefault(); touch(); drawCanvas(); renderKey(); renderSelPanel(); }
-  });
+  svg.setAttribute('tabindex', '0');
 }
 function renderSelPanel() {
   const p = $('selPanel'); if (!p) return;

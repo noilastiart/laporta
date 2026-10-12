@@ -825,6 +825,10 @@
     body.print-buffet #buffetPrintSheet .buffet-lines { font-size: 14px; }
     body.print-buffet #buffetPrintSheet .buffet-legend { font-size: 11px; }
     body.print-buffet #buffetPrintSheet .buffet-assign { font-size: 13px; max-width: 340px; }
+    body.print-buffet #buffetPrintSheet .bpt-layout .buffet-key { columns: 1; font-size: 11px; color: #141a21; }
+    body.print-buffet #buffetPrintSheet .bpt-layout .buffet-key b { flex: 0 0 17px; height: 17px; line-height: 15px; font-size: 10px; }
+    body.print-buffet #buffetPrintSheet .bpt-stack .buffet-key { columns: 4; font-size: 9.5px; }
+    body.print-buffet #buffetPrintSheet .bpt-stack .buffet-key b { flex: 0 0 15px; height: 15px; line-height: 13px; font-size: 9px; }
     body.print-buffet #buffetPrintSheet .bpt { font-size: 11.5px; color: #141a21; }
     body.print-buffet #buffetPrintSheet .bpt th { font-size: 10px; color: #141a21; }
     body.print-buffet #buffetPrintSheet .bpt td { height: 22px; color: #141a21; }
@@ -1673,7 +1677,9 @@ function buffetHtml(layout, L) {
   const names = L.shapes || {};
   const legend = Object.keys(BUFFET_SHAPES).filter(k => used[k] && k !== 'custom').map(k => `${buffetEsc(names[k] || BUFFET_SHAPES[k].name)} ${BUFFET_SHAPES[k].dims}`).join(' · ');
   const scale = `<div class="buffet-legend">${buffetEsc(L.scale || 'Drawn to scale: 6 ft table, 30 in wide')}${legend ? ' — ' + legend : ''}</div>`;
-  const key = L.pantable ? (arr.length ? buffetPanTableHtml(lay, L) : '') : arr.length ? `<ol class="buffet-key">${arr.map(a => `<li><b>${a.n}</b><span>${buffetEsc(buffetItemText(a.it))}</span></li>`).join('')}</ol>` : '';
+  const keyList = arr.length ? `<ol class="buffet-key">${arr.map(a => `<li><b>${a.n}</b><span>${buffetEsc(buffetItemText(a.it))}</span></li>`).join('')}</ol>` : '';
+  // Pan-count print: the numbered list (so the numbers on the drawing mean something) sits beside the pan table; long builds stack them.
+  const key = L.pantable ? (arr.length ? `<div class="bpt-layout${buffetPanRows(lay).length > 18 ? ' bpt-stack' : ''}"><div class="bpt-keycol">${keyList}</div><div class="bpt-tablecol">${buffetPanTableHtml(lay, L)}</div></div>` : '') : keyList;
   const assign = (lay.assignments || []).filter(a => a && (a.label || a.count != null && a.count !== ''))
     .map(a => `<li><span>${buffetEsc(a.label)}</span><b>${buffetEsc(a.count)}</b></li>`).join('');
   const assignBox = assign ? `<div class="buffet-assign"><div class="buffet-assign-title">${buffetEsc(L.assignments || 'Assignments')}</div><ul>${assign}</ul></div>` : '';
@@ -1693,6 +1699,9 @@ const BUFFET_CSS = `
 .buffet-key b{flex:0 0 17px;height:17px;border-radius:50%;border:1px solid currentColor;background:rgba(128,128,128,.22);font-size:10px;line-height:15px;text-align:center}
 .buffet-key span{min-width:0;overflow-wrap:anywhere}
 .bpt-wrap{display:flex;gap:10px;align-items:flex-start;margin:4px 0 6px}
+.bpt-layout{display:flex;gap:14px;align-items:flex-start}.bpt-keycol{flex:0 0 36%}.bpt-tablecol{flex:1;min-width:0}
+.bpt-layout .buffet-key{columns:1;margin:4px 0 0}.bpt-layout.bpt-stack{display:block}.bpt-stack .bpt-keycol{width:100%}.bpt-stack .buffet-key{columns:4;column-gap:12px}.bpt-stack .bpt-tablecol{margin-top:6px}
+.bpt-tablecol .bpt-wrap{margin-top:4px}
 .bpt{border-collapse:collapse;width:100%;table-layout:fixed;font-size:11px;color:inherit}
 .bpt th:nth-child(2),.bpt td:nth-child(2){width:17%}.bpt th:nth-child(n+3),.bpt td:nth-child(n+3){width:10.5%}
 .bpt td{overflow-wrap:anywhere}
