@@ -1149,6 +1149,10 @@
   }
   .month-cell-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
   .month-cell-count { color: var(--text-dim); margin-left: auto; padding-left: 4px; white-space: nowrap; }
+  /* Setup-only day for a group (nothing live that day): hollow dot, italic name, SETUP tag */
+  .month-cell-group.is-setup .month-cell-name { font-style: italic; color: var(--text-dim); }
+  .month-cell-group.is-setup .month-cell-count { opacity: .75; }
+  .month-setup-tag { font-size: 8.5px; letter-spacing: .6px; line-height: 1.3; border: 1px dashed var(--text-dim); color: var(--text-dim); border-radius: 3px; padding: 0 3px; flex: none; }
 
   /* Inline "what changed in this revision" marker -- bold plus a soft amber
      wash, so it reads on both the dark tooltip and the white run sheet, and
@@ -1218,6 +1222,8 @@
     .month-cell.is-today .month-daynum { color: #141a21; }
     .month-cell-group { color: #141a21; }
     .month-cell-count { color: #555; }
+    .month-setup-tag { color: #555; border-color: #555; }
+    .month-cell-group.is-setup .month-cell-name { color: #444; }
 
     /* --- Run sheet (printable day view): the modal is a screen-only preview
        shell. On any print, hide it by default; only when print-runsheet mode
@@ -1843,6 +1849,8 @@ const I18N = {
     note_saved: "Saved.",
     note_cleared: "Cleared.",
     month_view_btn: "Month View",
+    month_setup_tag: "SETUP",
+    month_setup_title: "Setup day: nothing live for this group today",
     day_view_btn: "Day View",
     all_notes_btn: "All Notes",
     all_notes_title: "All Notes",
@@ -1943,6 +1951,8 @@ const I18N = {
     note_saved: "Guardado.",
     note_cleared: "Borrado.",
     month_view_btn: "Vista mensual",
+    month_setup_tag: "MONTAJE",
+    month_setup_title: "Día de montaje: este grupo no tiene nada en vivo hoy",
     day_view_btn: "Vista diaria",
     all_notes_btn: "Todas las notas",
     all_notes_title: "Todas las notas",
@@ -2676,12 +2686,21 @@ function renderMonthView() {
   (DATA.days || []).forEach(day => {
     if (!day.date.startsWith(`${year}-${String(month).padStart(2, '0')}`)) return;
     const agg = {};
+    // A group's day is a SETUP day when every real event it has that day is a setup/flip/load-in (storage and room holds are ignored).
+    // A flip day that also has the event the same day is mixed, so it stays a normal line.
+    const SETUP_LBL = /set[ -]?up|load[ -]?in|load[ -]?out|flip/i, NEUTRAL_LBL = /storage|room hold|\bhold\b|walk[ -]?through/i;
+    const kinds = {};
     (day.rooms || []).forEach(r => (r.events || []).forEach(e => {
       if (!e.group) return;
       const val = e.set != null ? e.set : e.gtd;
       if (val == null) return;
       agg[e.group] = Math.max(agg[e.group] || 0, val);
+      const k = kinds[e.group] = kinds[e.group] || { live: 0, setup: 0 };
+      const lbl = e.label || '';
+      if (NEUTRAL_LBL.test(lbl)) return;
+      if (SETUP_LBL.test(lbl)) k.setup++; else k.live++;
     }));
+    Object.keys(agg).forEach(g => { agg[g] = { n: agg[g], setupOnly: !!(kinds[g] && kinds[g].setup > 0 && kinds[g].live === 0) }; });
     byDate[day.date] = agg;
   });
 
@@ -2696,7 +2715,8 @@ function renderMonthView() {
     Object.keys(agg).forEach(gname => {
       const g = groupByName[gname];
       const color = g ? g.color : '#647585';
-      cellBody += `<div class="month-cell-group"><span class="month-cell-dot" style="background:${color}"></span><span class="month-cell-name">${gname}</span><span class="month-cell-count">${agg[gname]}</span></div>`;
+      const so = agg[gname].setupOnly;
+      cellBody += `<div class="month-cell-group${so ? ' is-setup' : ''}"${so ? ` title="${t('month_setup_title')}"` : ''}><span class="month-cell-dot" style="${so ? `background:transparent;box-shadow:inset 0 0 0 1.5px ${color}` : `background:${color}`}"></span><span class="month-cell-name">${gname}</span>${so ? `<span class="month-setup-tag">${t('month_setup_tag')}</span>` : ''}<span class="month-cell-count">${agg[gname].n}</span></div>`;
     });
     html += `<div class="month-cell${isToday ? ' is-today' : ''}"><div class="month-daynum">${d}</div>${cellBody}</div>`;
   }
