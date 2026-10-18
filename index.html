@@ -310,6 +310,9 @@
     transition: opacity 0.4s ease, filter 0.4s ease, top 0.15s ease, height 0.15s ease;
   }
 
+  .block .count-badge { font-weight: 800; margin-right: 6px; }
+  /* Narrow live blocks: the event name continues in a lighter 'tail' just after the block, so it can be read without hovering. */
+  .block.block-tail { background: var(--live); opacity: .62; color: #141a21; font-weight: 700; font-size: 10px; display: flex; align-items: center; padding: 0 6px 0 5px; letter-spacing: .2px; border-left: 1px dashed #141a2180; cursor: default; }
   .block-banquet { background: var(--banquet); }
   /* Only used on a Setup/banquet block whose event has no Live phase at all
      (e.g. an overnight "Flip" hold) -- the label row that block would
@@ -1194,6 +1197,7 @@
     .block-banquet-labeled { color: #141a21 !important; font-size: 8px; }
     .block-av { background: #6b7fd4 !important; }
     .block-live { background: var(--gold) !important; color: #141a21 !important; font-size: 8px; }
+    .block.block-tail { background: var(--gold) !important; color: #141a21 !important; font-size: 8px; opacity: .75; }
     .block-flip { background: repeating-linear-gradient(45deg,#c8d4de,#c8d4de 3px,#a8b8c5 3px,#a8b8c5 6px) !important; border: 1px dashed #5a6b7d; color: #2a3a4a !important; }
     .block-flip-warning { background: repeating-linear-gradient(45deg,#f0dcb0,#f0dcb0 3px,#dfc088 3px,#dfc088 6px) !important; border: 1px dashed #a67828; color: #4a350a !important; }
     .block.is-past { opacity: 0.4; filter: grayscale(70%); }
@@ -2797,6 +2801,12 @@ function addBlock(track, className, start, end, opts) {
       gb.textContent = opts.groupInitial;
       block.appendChild(gb);
     }
+    if (opts.countText) {
+      const cnt = document.createElement('span');
+      cnt.className = 'count-badge';
+      cnt.textContent = opts.countText;
+      block.appendChild(cnt);
+    }
     if (opts.rev) {
       const badge = document.createElement('span');
       badge.className = 'rev-badge';
@@ -2823,8 +2833,20 @@ function addBlock(track, className, start, end, opts) {
       cb.textContent = '⚡';
       block.appendChild(cb);
     }
-    block.appendChild(document.createTextNode(opts.labelText));
+    if (opts.labelText) block.appendChild(document.createTextNode(opts.labelText));
     block.style.color = '';
+  }
+  if (opts.tail) {
+    const tl = document.createElement('div');
+    tl.className = 'block block-tail';
+    tl.dataset.layer = opts.layer; tl.dataset.end = end;
+    tl.style.left = pct(end) + '%';
+    tl.style.width = opts.tail.px + 'px';
+    tl.style.top = (opts.top != null ? opts.top : 3) + 'px';
+    tl.style.height = (opts.height != null ? opts.height : 13) + 'px';
+    tl.appendChild(document.createTextNode(opts.tail.text));
+    tl.title = opts.tail.text;
+    track.appendChild(tl);
   }
   block.addEventListener('mouseenter', () => {
     tooltip.style.display = 'block';
@@ -2942,11 +2964,14 @@ function layoutBand(items) {
   const sorted = items.slice().sort((a, b) => a.start - b.start);
   const rowEnds = [];
   sorted.forEach(item => {
+    // Use the block's effective end (its time end, or the end of the label it needs room for) so a narrow
+    // block's name never sits under its neighbor.
+    const eEnd = item.effEnd != null ? item.effEnd : item.end;
     let placed = false;
     for (let r = 0; r < rowEnds.length; r++) {
-      if (rowEnds[r] <= item.start) { item.row = r; rowEnds[r] = item.end; placed = true; break; }
+      if (rowEnds[r] <= item.start) { item.row = r; rowEnds[r] = eEnd; placed = true; break; }
     }
-    if (!placed) { item.row = rowEnds.length; rowEnds.push(item.end); }
+    if (!placed) { item.row = rowEnds.length; rowEnds.push(eEnd); }
   });
   return rowEnds.length;
 }
@@ -3070,9 +3095,21 @@ function computeFlipGaps(room) {
   return gaps;
 }
 
+// Rough pixel budget a live block needs to show its group badge, headcount, REV/flag marks and its name.
+function liveBlockNeed(ev) {
+  const abbr = (GROUP_ABBR[ev.group] || (ev.group || '').charAt(0) || '').length;
+  let lead = 14 + abbr * 5.6 + 12;
+  if (ev.set) lead += String(ev.set).length * 6.4 + 8;
+  if (ev.status === 'revision') lead += 34;
+  if (ev.redFlag || (ev.flags && ev.flags.length)) lead += 16;
+  const lab = Math.min(td(ev.label).length, 40) * 5.9 + 6;
+  return { lead, lab };
+}
+let PX_PER_MIN = 1.4;
 function renderRooms() {
   roomRowsEl.innerHTML = '';
   const day = activeDay();
+  PX_PER_MIN = Math.max(300, (roomRowsEl.clientWidth || (window.innerWidth - 80)) - 156) / (DAY_END - DAY_START);
 
   day.rooms.forEach(room => {
     const row = document.createElement('div');
@@ -3096,7 +3133,9 @@ function renderRooms() {
         bandItems.av.push({ start: ev.avStart, end: ev.avEnd, kind: 'av', ev });
       }
       if (ev.liveStart != null && ev.liveEnd != null) {
-        bandItems.live.push({ start: ev.liveStart, end: ev.liveEnd, kind: 'live', ev });
+        const nd = liveBlockNeed(ev);
+        bandItems.live.push({ start: ev.liveStart, end: ev.liveEnd, kind: 'live', ev, leadPx: nd.lead, labPx: nd.lab, needPx: nd.lead + nd.lab,
+          effEnd: Math.max(ev.liveEnd, ev.liveStart + (nd.lead + nd.lab) / PX_PER_MIN) });
       }
     });
 
@@ -3115,13 +3154,18 @@ function renderRooms() {
       const big = aDur <= bDur ? b : a;
       const smallDur = small.end - small.start, bigDur = big.end - big.start;
       const fullyContained = small.start >= big.start && small.end <= big.end;
-      return fullyContained && smallDur <= bigDur * NESTED_MAX_RATIO;
+      // A nested block that is too narrow to show its own name still gets its own row.
+      const wideEnough = !small.needPx || smallDur * PX_PER_MIN >= small.needPx;
+      return fullyContained && smallDur <= bigDur * NESTED_MAX_RATIO && wideEnough;
     }
+    // Stack when two blocks overlap in time, or when a block's name needs more room than its own width and
+    // would run under the next block (so narrow back-to-back events are staggered instead of cut off).
     function needsStacking(items) {
       for (let i = 0; i < items.length; i++) {
         for (let j = i + 1; j < items.length; j++) {
           const a = items[i], b = items[j];
-          if (a.start < b.end && b.start < a.end && !isNestedPair(a, b)) return true;
+          const aE = a.effEnd != null ? a.effEnd : a.end, bE = b.effEnd != null ? b.effEnd : b.end;
+          if (a.start < bE && b.start < aE && !isNestedPair(a, b)) return true;
         }
       }
       return false;
@@ -3185,7 +3229,7 @@ function renderRooms() {
           addBlock(track, 'block-banquet' + (hasLiveBlock ? '' : ' block-banquet-labeled'), item.start, item.end, {
             layer: 'banquet', tooltipTitle: `${t('layer_banquet')} — ${td(ev.label)}`, rev, flags: tdFlags, notes: setupNotesHtml(ev),
             redFlagAbs: redFlagAbsHere, redFlag: !!ev.redFlag,
-            showLabel: !hasLiveBlock, labelText: hasLiveBlock ? undefined : td(ev.label) + (ev.set ? ` (${ev.set})` : ''),
+            showLabel: !hasLiveBlock, labelText: hasLiveBlock ? undefined : td(ev.label), countText: hasLiveBlock ? undefined : (ev.set ? String(ev.set) : ''),
             groupName: ev.group, conflict: hasConflict, conflictNote: td(ev.conflictNote), top, height,
             diagramKey: ev.diagramKey, eventDate: day.date, eventCategory: ev.eventCategory,
             eveningSetup: ev.eveningSetup, eveningSetupNote: td(ev.eveningSetupNote), noteKey
@@ -3198,8 +3242,12 @@ function renderRooms() {
             eventCategory: ev.eventCategory
           });
         } else {
+          // A block too narrow for its own name keeps the badge + headcount and the name continues in a tail just after it.
+          const trueW = (item.end - item.start) * PX_PER_MIN;
+          const tailOK = item.labPx && trueW < item.leadPx + item.labPx - 2 && item.end + (item.labPx + 4) / PX_PER_MIN <= DAY_END;
           addBlock(track, 'block-live', item.start, item.end, {
-            layer: 'live', showLabel: true, labelText: td(ev.label) + (ev.set ? ` (${ev.set})` : ''),
+            layer: 'live', showLabel: true, labelText: tailOK ? '' : td(ev.label), countText: ev.set ? String(ev.set) : '',
+            tail: tailOK ? { text: td(ev.label), px: Math.ceil(item.labPx + 4) } : undefined,
             redFlag: !!ev.redFlag,
             tooltipTitle: td(ev.label), rev, flags: tdFlags, notes: liveBlockNotesHtml(ev, hasBanquetBlock),
             groupName: ev.group, groupColor, groupInitial, conflict: hasConflict, conflictNote: td(ev.conflictNote),
