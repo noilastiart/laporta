@@ -29,10 +29,14 @@ details>summary{cursor:pointer;color:var(--accent)}
 @media (max-width:700px){.meta{grid-template-columns:1fr}}
 @media print{
   body{background:#fff;padding:0.35in;color:#141a21}
-  body.printing>*:not(#printSheet){display:none!important}
+  body.printing>*:not(#printSheet):not(#capSheet){display:none!important}
   body.printing #printSheet{display:block!important}
+  body.printing #capSheet{display:block!important;break-before:page;page-break-before:always;color:#000}
+  body.printing #capSheet:empty{display:none!important}
+  body.printing-cap>*:not(#capSheet){display:none!important}
+  body.printing-cap #capSheet{display:block!important;color:#000}
 }
-#printSheet,#labelSheet{display:none}
+#printSheet,#labelSheet,#capSheet{display:none}
 .lpage{box-sizing:border-box;width:8.5in;height:11in;padding:.5in .25in;display:grid;grid-template-columns:4in 4in;grid-template-rows:repeat(5,2in);break-after:page;page-break-after:always;background:#fff;color:#000}
 .lpage:last-child{break-after:auto;page-break-after:auto}
 .lcard{box-sizing:border-box;width:4in;height:2in;padding:.14in .2in;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden}
@@ -65,7 +69,7 @@ details>summary{cursor:pointer;color:var(--accent)}
 }
 </style><style id="pageStyle"></style></head><body>
 <header><h1>Buffet Line Builder</h1><small>Add the tables and chafers, drag them where they go, type what goes in each one, print.</small>
-  <span class="sp"><button id="btnNew">New</button><button id="btnPrint" class="primary">🖨 Print (one landscape page)</button></span></header>
+  <span class="sp"><button id="btnNew">New</button><button id="btnPrint" class="primary">🖨 Print (one landscape page)</button><label class="hint" style="margin-left:6px;color:inherit"><input type="checkbox" id="capOn" checked> + captain&rsquo;s report</label><button id="btnCap" title="Print just the captain's report form">🧾 Captain&rsquo;s report only</button></span></header>
 <main>
   <div class="card">
     <div class="meta">
@@ -79,6 +83,7 @@ details>summary{cursor:pointer;color:var(--accent)}
   <div class="card"><h2>What will print</h2><div id="keyBox"></div></div>
 </main>
 <div id="printSheet"></div>
+<div id="capSheet"></div>
 <div id="labelSheet"></div>
 <script>
 /* Buffet layout renderer -- ONE source of truth.  (v3: free placement, drawn to scale)
@@ -368,6 +373,35 @@ function buffetHtml(layout, L) {
   return `<div class="buffet-block${fit.over ? ' buffet-over' : ''}">${draft}${note}<div class="buffet-wrap"><div class="buffet-diagram">${arr.length ? buffetSvg(lay, L) : ''}</div>${scale}${key}${assignBox}</div></div>`;
 }
 
+// ---- Captain's report: a one-page, fill-in-by-hand form that prints after the buffet sheet. Top boxes are pre-filled from the event.
+function buffetCaptainHtml(m, L) {
+  m = m || {}; L = L || {};
+  const e = buffetEsc, v = x => (x == null || x === '') ? '' : e(x);
+  const box = (label, val, cls) => `<div class="cr-box ${cls || ''}"><span class="cr-lab">${e(label)}</span><span class="cr-val">${val || ''}</span></div>`;
+  const guests = (m.gtd != null || m.set != null) ? `${v(m.gtd)} / ${v(m.set)}` : '';
+  const checks = ['Room set to the diagram', 'Buffet set from the numbered list', 'Labels out', 'Pan counts started', 'Dietary / allergens checked with the kitchen', 'AV and mics working'];
+  const rate = ['Food', 'Service', 'Room & setup', 'Client mood'];
+  const dots = `<span class="cr-dots">${[1, 2, 3, 4, 5].map(n => `<i>${n}</i>`).join('')}</span>`;
+  const rows = Array.from({ length: 5 }, () => '<tr><td></td><td></td><td></td><td></td><td></td></tr>').join('');
+  return `<div class="cr-page">
+  <div class="cr-head"><h2>Captain&rsquo;s Report</h2><div>Fill in by hand &middot; turn in after the event</div></div>
+  <div class="cr-row cr-top">${box('Group', v(m.group), 'w2')}${box('Event', v(m.event) + (m.time ? `<small class="cr-sub">${e(m.time)}</small>` : ''), 'w2')}${box('Date', v(m.date))}${box('Room', v(m.room))}${box('BEO #', v(m.beo))}${box('Gtd / Set', guests)}</div>
+  <div class="cr-row">${box('Captain', '', 'w2')}${box('Servers on the floor', '')}${box('Guests in', '')}${box('Food out', '')}${box('Service ended', '')}${box('Room clear', '')}</div>
+  <div class="cr-row cr-two">
+    <div class="cr-sec"><h3>Before service</h3><ul class="cr-checks">${checks.map(c => `<li><i class="cr-sq"></i>${e(c)}</li>`).join('')}</ul></div>
+    <div class="cr-sec"><h3>How it went <small>(circle one: 1 poor &ndash; 5 great)</small></h3><ul class="cr-rate">${rate.map(r => `<li><b>${e(r)}</b>${dots}</li>`).join('')}</ul></div>
+  </div>
+  <div class="cr-sec"><h3>Issues &amp; complaints</h3><table class="cr-tbl"><thead><tr><th style="width:9%">Time</th><th style="width:36%">What happened</th><th style="width:15%">Who raised it</th><th style="width:30%">What we did</th><th>Follow-up needed? (Y / N)</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="cr-row cr-three">
+    <div class="cr-sec"><h3>Ran short / ran out of</h3><div class="cr-area"></div></div>
+    <div class="cr-sec"><h3>Equipment or room problems</h3><div class="cr-area"></div></div>
+    <div class="cr-sec"><h3>Dietary / allergen incident?</h3><div class="cr-yn"><span><i class="cr-sq"></i>No</span><span><i class="cr-sq"></i>Yes &mdash; what, who, what we did:</span></div><div class="cr-area short"></div></div>
+  </div>
+  <div class="cr-sec"><h3>Client &amp; guest comments (good or bad)</h3><div class="cr-area wide"></div></div>
+  <div class="cr-foot"><span>Captain signature ____________________________</span><span>Date ______________</span><span><i class="cr-sq"></i> Reviewed by manager &nbsp; initials ________</span></div>
+</div>`;
+}
+
 /* Styles for the diagram block, shared by editor and Compass (installed once at load). */
 const BUFFET_CSS = `
 .buffet-block{margin-top:4px;position:relative;color:inherit}
@@ -396,6 +430,20 @@ const BUFFET_CSS = `
 .buffet-assign ul{list-style:none;margin:0;padding:0}
 .buffet-assign li{display:flex;justify-content:space-between;gap:10px;padding:1px 0;border-top:1px dotted rgba(128,128,128,.4)}
 .buffet-assign li:first-child{border-top:0}
+.cr-page{font-family:Arial,Helvetica,sans-serif;color:#000;font-size:11px;width:10.3in}
+.cr-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #000;padding-bottom:3px;margin-bottom:6px}.cr-head h2{margin:0;font-size:20px}.cr-head div{font-size:11px;color:#333}
+.cr-row{display:flex;gap:6px;margin-bottom:6px}.cr-box{flex:1;border:1.2px solid #000;border-radius:3px;padding:2px 6px;min-height:.4in;display:flex;flex-direction:column}.cr-box.w2{flex:2}.cr-lab{font-size:8.5px;text-transform:uppercase;letter-spacing:.4px;color:#444}.cr-val{font-size:12px;font-weight:700;margin-top:1px}
+.cr-top .cr-box{background:#f2f4f6}.cr-sub{display:block;font-size:9.5px;font-weight:400;color:#333;margin-top:1px}
+.cr-two{align-items:stretch}.cr-two .cr-sec{flex:1}
+.cr-sec{margin-bottom:6px}.cr-sec h3{margin:0 0 3px;font-size:11px;text-transform:uppercase;letter-spacing:.5px}.cr-sec h3 small{font-weight:400;text-transform:none;letter-spacing:0;color:#444}
+.cr-checks,.cr-rate{list-style:none;margin:0;padding:0}.cr-checks li{display:flex;align-items:center;gap:6px;padding:2px 0;font-size:11.5px}
+.cr-sq{display:inline-block;width:13px;height:13px;border:1.4px solid #000;border-radius:2px;margin-right:4px;flex:none}.cr-checks .cr-sq{margin-right:0}
+.cr-rate li{display:flex;align-items:center;justify-content:space-between;padding:2px 0;font-size:11.5px}.cr-rate b{font-weight:700}
+.cr-dots{display:inline-flex;gap:7px}.cr-dots i{font-style:normal;width:20px;height:20px;border:1.3px solid #000;border-radius:50%;text-align:center;line-height:18px;font-size:10px}
+.cr-tbl{border-collapse:collapse;width:100%}.cr-tbl th,.cr-tbl td{border:1px solid #000;padding:2px 5px}.cr-tbl th{background:#e9edf1;font-size:9.5px;text-align:left}.cr-tbl td{height:.31in}
+.cr-three{align-items:stretch}.cr-three .cr-sec{flex:1}.cr-area{border:1.2px solid #000;border-radius:3px;height:.68in}.cr-area.short{height:.4in}.cr-area.wide{height:.48in}
+.cr-yn{display:flex;gap:14px;font-size:11px;margin-bottom:3px}.cr-yn span{display:flex;align-items:center}
+.cr-foot{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:11px;padding-top:4px}.cr-foot span{display:flex;align-items:center}
 @media print{.buffet-block,.buffet-wrap{break-inside:avoid;page-break-inside:avoid}}
 `;
 function buffetInstallCss() {
@@ -683,15 +731,19 @@ function printNow() {
   s.style.zoom = ''; s.style.cssText += ';display:block;position:fixed;left:-99999px;top:0;width:10.3in;visibility:hidden';
   const h = s.getBoundingClientRect().height, avail = 7.7 * 96;
   s.style.cssText = ''; if (h > avail && nrows <= 30) s.style.zoom = String(Math.max(0.72, avail / h).toFixed(3));
+  $('capSheet').innerHTML = $('capOn').checked ? capHtml() : '';
   $('pageStyle').textContent = '@page{size:landscape;margin:0}';
   document.body.classList.add('printing'); window.print();
 }
-window.addEventListener('afterprint', () => document.body.classList.remove('printing', 'printing-labels'));
+function capHtml() { return buffetCaptainHtml({ group: meta.title || '', event: '', date: meta.date || '', room: meta.room || '', beo: '' }); }
+function printCapOnly() { $('capSheet').innerHTML = capHtml(); $('pageStyle').textContent = '@page{size:landscape;margin:0}'; document.body.classList.add('printing-cap'); window.print(); }
+window.addEventListener('afterprint', () => document.body.classList.remove('printing', 'printing-labels', 'printing-cap'));
 
 // ---------- wiring
 ['mTitle', 'mDate', 'mRoom'].forEach(id => { $(id).oninput = () => { meta.title = $('mTitle').value; meta.date = $('mDate').value; meta.room = $('mRoom').value; touch(); }; });
 $('btnNew').onclick = startNew;
-$('btnPrint').onclick = printNow;
+$('btnPrint').onclick = printNow; $('btnCap').onclick = printCapOnly;
+try { $('capOn').checked = localStorage.getItem('buffetBuilder.cap') !== '0'; } catch (x) {} $('capOn').onchange = () => { try { localStorage.setItem('buffetBuilder.cap', $('capOn').checked ? '1' : '0'); } catch (x) {} };
 $('saved').onchange = ev => { if (ev.target.value) openId(ev.target.value); };
 $('btnDel').onclick = () => { const id = db.current; if (!id || !db.layouts[id]) return; if (!confirm('Delete "' + label(id) + '" from this computer?')) return; delete db.layouts[id]; db.current = null; persist(); startNew(); fillSaved(); };
 buffetInstallCss(); loadDb(); fillSaved();

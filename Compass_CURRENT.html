@@ -814,11 +814,20 @@
   #buffetPanelBody { color: var(--text); }
   .diagram-panel.buffet-wide { width: min(820px, 96vw); }
   .diagram-panel.buffet-wide:not(.open) { right: -110vw; }
-  #buffetPrintSheet { display: none; }
+  #buffetPrintSheet, #buffetCaptainSheet, #captainPrintSheet { display: none; }
+  .cr-btn { background: transparent; border: 1px solid #8a9aa8; color: #3a4a5a; border-radius: 10px; font-size: 9px; padding: 0 6px; cursor: pointer; margin-left: 6px; }
+  .cr-btn:hover { background: #e8eef3; }
+  .buffet-cap-opt { font-size: 11px; color: var(--text-dim); margin-left: 8px; white-space: nowrap; }
   .buffet-print-btn { margin: 4px 0 8px; background: var(--surface-raised); color: var(--gold-bright); border: 1px solid var(--gold); padding: 5px 14px; border-radius: 16px; font-size: 12px; cursor: pointer; }
   @media print {
-    body.print-buffet > *:not(#buffetPrintSheet) { display: none !important; }
+    body.print-buffet > *:not(#buffetPrintSheet):not(#buffetCaptainSheet) { display: none !important; }
     body.print-buffet #buffetPrintSheet { display: block !important; color: #141a21; }
+    body.print-buffet #buffetCaptainSheet { display: block !important; break-before: page; page-break-before: always; color: #000; }
+    body.print-buffet #buffetCaptainSheet:empty { display: none !important; }
+    body.print-captain > *:not(#captainPrintSheet) { display: none !important; }
+    body.print-captain #captainPrintSheet { display: block !important; color: #000; background: #fff; }
+    body.print-captain #captainPrintSheet .cr-page { break-after: page; page-break-after: always; }
+    body.print-captain #captainPrintSheet .cr-page:last-child { break-after: auto; page-break-after: auto; }
     body.print-buffet .bps-head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #141a21; padding-bottom: 4px; margin-bottom: 8px; }
     body.print-buffet .bps-head h2 { margin: 0; font-size: 20px; color: #141a21; }
     body.print-buffet .bps-head div { font-size: 12px; color: #333; text-align: right; }
@@ -1182,7 +1191,7 @@
     body { padding: 0.35in; background: #fff; color: #141a21; font-size: 10px; }
     h1 { color: #141a21; font-size: 18px; }
     .subtitle { color: #555; margin-bottom: 12px; }
-    .slider-wrap, .layer-toggles, .tooltip, .no-print-hide { display: none !important; }
+    .slider-wrap, .layer-toggles, .tooltip, .no-print-hide, .cr-btn { display: none !important; }
     .day-tabs { display: none !important; }
     .snapshot { background: #e8eef3; border: 1px solid #a8b8c5; border-left: 3px solid var(--gold); padding: 8px 14px; margin-bottom: 12px; }
     .snapshot .time-readout { color: #141a21; font-size: 16px; }
@@ -1335,6 +1344,7 @@
     <div class="run-sheet-modal-toolbar">
       <div class="run-sheet-modal-title" data-i18n="runsheet_modal_title">Run Sheet Preview</div>
       <div class="run-sheet-modal-actions">
+        <button id="runSheetCaptainBtn">🧾 <span data-i18n="captain_day_btn">Captain's reports (this day)</span></button>
         <button id="runSheetPrintBtn">🖨 <span data-i18n="runsheet_print_btn">Print</span></button>
         <button class="run-sheet-close-btn" id="runSheetCloseBtn">✕ <span data-i18n="close_title">Close</span></button>
       </div>
@@ -1696,6 +1706,35 @@ function buffetHtml(layout, L) {
   return `<div class="buffet-block${fit.over ? ' buffet-over' : ''}">${draft}${note}<div class="buffet-wrap"><div class="buffet-diagram">${arr.length ? buffetSvg(lay, L) : ''}</div>${scale}${key}${assignBox}</div></div>`;
 }
 
+// ---- Captain's report: a one-page, fill-in-by-hand form that prints after the buffet sheet. Top boxes are pre-filled from the event.
+function buffetCaptainHtml(m, L) {
+  m = m || {}; L = L || {};
+  const e = buffetEsc, v = x => (x == null || x === '') ? '' : e(x);
+  const box = (label, val, cls) => `<div class="cr-box ${cls || ''}"><span class="cr-lab">${e(label)}</span><span class="cr-val">${val || ''}</span></div>`;
+  const guests = (m.gtd != null || m.set != null) ? `${v(m.gtd)} / ${v(m.set)}` : '';
+  const checks = ['Room set to the diagram', 'Buffet set from the numbered list', 'Labels out', 'Pan counts started', 'Dietary / allergens checked with the kitchen', 'AV and mics working'];
+  const rate = ['Food', 'Service', 'Room & setup', 'Client mood'];
+  const dots = `<span class="cr-dots">${[1, 2, 3, 4, 5].map(n => `<i>${n}</i>`).join('')}</span>`;
+  const rows = Array.from({ length: 5 }, () => '<tr><td></td><td></td><td></td><td></td><td></td></tr>').join('');
+  return `<div class="cr-page">
+  <div class="cr-head"><h2>Captain&rsquo;s Report</h2><div>Fill in by hand &middot; turn in after the event</div></div>
+  <div class="cr-row cr-top">${box('Group', v(m.group), 'w2')}${box('Event', v(m.event) + (m.time ? `<small class="cr-sub">${e(m.time)}</small>` : ''), 'w2')}${box('Date', v(m.date))}${box('Room', v(m.room))}${box('BEO #', v(m.beo))}${box('Gtd / Set', guests)}</div>
+  <div class="cr-row">${box('Captain', '', 'w2')}${box('Servers on the floor', '')}${box('Guests in', '')}${box('Food out', '')}${box('Service ended', '')}${box('Room clear', '')}</div>
+  <div class="cr-row cr-two">
+    <div class="cr-sec"><h3>Before service</h3><ul class="cr-checks">${checks.map(c => `<li><i class="cr-sq"></i>${e(c)}</li>`).join('')}</ul></div>
+    <div class="cr-sec"><h3>How it went <small>(circle one: 1 poor &ndash; 5 great)</small></h3><ul class="cr-rate">${rate.map(r => `<li><b>${e(r)}</b>${dots}</li>`).join('')}</ul></div>
+  </div>
+  <div class="cr-sec"><h3>Issues &amp; complaints</h3><table class="cr-tbl"><thead><tr><th style="width:9%">Time</th><th style="width:36%">What happened</th><th style="width:15%">Who raised it</th><th style="width:30%">What we did</th><th>Follow-up needed? (Y / N)</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="cr-row cr-three">
+    <div class="cr-sec"><h3>Ran short / ran out of</h3><div class="cr-area"></div></div>
+    <div class="cr-sec"><h3>Equipment or room problems</h3><div class="cr-area"></div></div>
+    <div class="cr-sec"><h3>Dietary / allergen incident?</h3><div class="cr-yn"><span><i class="cr-sq"></i>No</span><span><i class="cr-sq"></i>Yes &mdash; what, who, what we did:</span></div><div class="cr-area short"></div></div>
+  </div>
+  <div class="cr-sec"><h3>Client &amp; guest comments (good or bad)</h3><div class="cr-area wide"></div></div>
+  <div class="cr-foot"><span>Captain signature ____________________________</span><span>Date ______________</span><span><i class="cr-sq"></i> Reviewed by manager &nbsp; initials ________</span></div>
+</div>`;
+}
+
 /* Styles for the diagram block, shared by editor and Compass (installed once at load). */
 const BUFFET_CSS = `
 .buffet-block{margin-top:4px;position:relative;color:inherit}
@@ -1724,6 +1763,20 @@ const BUFFET_CSS = `
 .buffet-assign ul{list-style:none;margin:0;padding:0}
 .buffet-assign li{display:flex;justify-content:space-between;gap:10px;padding:1px 0;border-top:1px dotted rgba(128,128,128,.4)}
 .buffet-assign li:first-child{border-top:0}
+.cr-page{font-family:Arial,Helvetica,sans-serif;color:#000;font-size:11px;width:10.3in}
+.cr-head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #000;padding-bottom:3px;margin-bottom:6px}.cr-head h2{margin:0;font-size:20px}.cr-head div{font-size:11px;color:#333}
+.cr-row{display:flex;gap:6px;margin-bottom:6px}.cr-box{flex:1;border:1.2px solid #000;border-radius:3px;padding:2px 6px;min-height:.4in;display:flex;flex-direction:column}.cr-box.w2{flex:2}.cr-lab{font-size:8.5px;text-transform:uppercase;letter-spacing:.4px;color:#444}.cr-val{font-size:12px;font-weight:700;margin-top:1px}
+.cr-top .cr-box{background:#f2f4f6}.cr-sub{display:block;font-size:9.5px;font-weight:400;color:#333;margin-top:1px}
+.cr-two{align-items:stretch}.cr-two .cr-sec{flex:1}
+.cr-sec{margin-bottom:6px}.cr-sec h3{margin:0 0 3px;font-size:11px;text-transform:uppercase;letter-spacing:.5px}.cr-sec h3 small{font-weight:400;text-transform:none;letter-spacing:0;color:#444}
+.cr-checks,.cr-rate{list-style:none;margin:0;padding:0}.cr-checks li{display:flex;align-items:center;gap:6px;padding:2px 0;font-size:11.5px}
+.cr-sq{display:inline-block;width:13px;height:13px;border:1.4px solid #000;border-radius:2px;margin-right:4px;flex:none}.cr-checks .cr-sq{margin-right:0}
+.cr-rate li{display:flex;align-items:center;justify-content:space-between;padding:2px 0;font-size:11.5px}.cr-rate b{font-weight:700}
+.cr-dots{display:inline-flex;gap:7px}.cr-dots i{font-style:normal;width:20px;height:20px;border:1.3px solid #000;border-radius:50%;text-align:center;line-height:18px;font-size:10px}
+.cr-tbl{border-collapse:collapse;width:100%}.cr-tbl th,.cr-tbl td{border:1px solid #000;padding:2px 5px}.cr-tbl th{background:#e9edf1;font-size:9.5px;text-align:left}.cr-tbl td{height:.31in}
+.cr-three{align-items:stretch}.cr-three .cr-sec{flex:1}.cr-area{border:1.2px solid #000;border-radius:3px;height:.68in}.cr-area.short{height:.4in}.cr-area.wide{height:.48in}
+.cr-yn{display:flex;gap:14px;font-size:11px;margin-bottom:3px}.cr-yn span{display:flex;align-items:center}
+.cr-foot{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:11px;padding-top:4px}.cr-foot span{display:flex;align-items:center}
 @media print{.buffet-block,.buffet-wrap{break-inside:avoid;page-break-inside:avoid}}
 `;
 function buffetInstallCss() {
@@ -1799,6 +1852,10 @@ const I18N = {
     buffet_lines: "Set up {n} identical lines",
     buffet_view_title: "View buffet layout",
     buffet_print: "Print buffet layout (one landscape page)",
+    captain_btn: "Captain's report",
+    captain_none: "No meal or bar events to print a captain's report for on this day (for this group).",
+    captain_opt: "+ captain's report page",
+    captain_day_btn: "Captain's reports (this day)",
     buffet_tables: "{n} x 6 ft tables",
     buffet_wall: "WALL",
     buffet_one: "Single-sided: against a wall",
@@ -1901,6 +1958,10 @@ const I18N = {
     buffet_lines: "Preparar {n} líneas idénticas",
     buffet_view_title: "Ver distribución del buffet",
     buffet_print: "Imprimir distribución del buffet (una página horizontal)",
+    captain_btn: "Reporte del capitán",
+    captain_none: "No hay eventos de comida o bar para este día (ni este grupo).",
+    captain_opt: "+ página de reporte del capitán",
+    captain_day_btn: "Reportes del capitán (este día)",
     buffet_tables: "{n} mesas de 6 pies",
     buffet_wall: "PARED",
     buffet_one: "Un solo lado: contra la pared",
@@ -2313,7 +2374,7 @@ function openBuffetPanel(beo, title, sub) {
     buffetBodyEl = document.createElement('div'); buffetBodyEl.id = 'buffetPanelBody';
     diagramPanel.querySelector('.diagram-panel-body').appendChild(buffetBodyEl);
   }
-  buffetBodyEl.innerHTML = `<button class="buffet-print-btn" onclick="printBuffetLayout('${beo}')">🖨 ${buffetEsc(t('buffet_print'))}</button>` + buffetHtml(l, buffetLabels());
+  buffetBodyEl.innerHTML = `<button class="buffet-print-btn" onclick="printBuffetLayout('${beo}')">🖨 ${buffetEsc(t('buffet_print'))}</button><label class="buffet-cap-opt"><input type="checkbox" id="buffetCapOn"${captainOptOn() ? ' checked' : ''} onchange="setCaptainOpt(this.checked)"> ${buffetEsc(t('captain_opt'))}</label>` + buffetHtml(l, buffetLabels());
   buffetBodyEl.style.display = '';
   diagramPanelImg.style.display = 'none';
   diagramPanel.classList.add('buffet-wide');
@@ -2342,10 +2403,51 @@ function printBuffetLayout(beo) {
   sheet.style.zoom = ''; const keep = sheet.style.cssText; sheet.style.cssText = keep + ';display:block;position:fixed;left:-99999px;top:0;width:10.3in;visibility:hidden';
   const hh = sheet.getBoundingClientRect().height, avail = 7.7 * 96;
   sheet.style.cssText = keep; if (hh > avail && nrows <= 30) sheet.style.zoom = String(Math.max(0.72, avail / hh).toFixed(3));
+  let cap = document.getElementById('buffetCaptainSheet');
+  if (!cap) { cap = document.createElement('div'); cap.id = 'buffetCaptainSheet'; document.body.appendChild(cap); }
+  cap.innerHTML = captainOptOn() ? buffetCaptainHtml(captainMeta(h.day, h.room.name, ev)) : '';
   document.body.classList.add('print-buffet');
   window.print();
 }
 window.addEventListener('afterprint', () => document.body.classList.remove('print-buffet'));
+// ---- Captain's report (fill-in form printed after the buffet sheet, or on its own for any event)
+function captainOptOn() { try { return localStorage.getItem('compassCaptainOpt') !== '0'; } catch (e) { return true; } }
+function setCaptainOpt(on) { try { localStorage.setItem('compassCaptainOpt', on ? '1' : '0'); } catch (e) {} }
+function captainMeta(day, roomName, ev) {
+  return { group: ev.group || '', event: td(ev.label), date: day.dateLabel, room: roomName, beo: ev.beoNumber || '', gtd: ev.gtd, set: ev.set,
+    time: ev.liveStart != null ? `${fmtTime(ev.liveStart)} – ${fmtTime(ev.liveEnd)}` : '' };
+}
+function printCaptainReports(metas) {
+  if (!metas.length) { alert(t('captain_none')); return; }
+  let sheet = document.getElementById('captainPrintSheet');
+  if (!sheet) { sheet = document.createElement('div'); sheet.id = 'captainPrintSheet'; document.body.appendChild(sheet); }
+  sheet.innerHTML = metas.map(m => buffetCaptainHtml(m)).join('');
+  document.body.classList.add('print-captain');
+  window.print();
+}
+window.addEventListener('afterprint', () => document.body.classList.remove('print-captain'));
+function findEventForCaptain(date, roomName, beo, label) {
+  const day = DATA.days.find(d => d.date === date); if (!day) return null;
+  const room = day.rooms.find(r => r.name === roomName); if (!room) return null;
+  const ev = room.events.find(e => e.beoNumber === beo && e.label === label) || room.events.find(e => e.beoNumber === beo); return ev ? { day, room, ev } : null;
+}
+function printCaptainForCard(btn) {
+  const h = findEventForCaptain(btn.dataset.date, btn.dataset.room, btn.dataset.beo, btn.dataset.label); if (!h) return;
+  printCaptainReports([captainMeta(h.day, h.room.name, h.ev)]);
+}
+// A "service" event is one a captain would run: it serves food or drinks, or is named like a meal/reception/break.
+function isCaptainEvent(ev) {
+  if (ev.liveStart == null) return false;
+  if (/set[ -]?up|flip|storage|room hold|\bhold\b|load[ -]?in|walk[ -]?through|registration/i.test(ev.label || '') && !ev.eventNotes) return false;
+  return !!ev.eventNotes || /breakfast|lunch|dinner|buffet|reception|bar\b|break\b|banquet|meal|snack|brunch|tasting|hospitality|welcome/i.test(ev.label || '');
+}
+document.getElementById('runSheetCaptainBtn').addEventListener('click', () => {
+  const day = activeDay(), gf = document.getElementById('runSheetGroupFilter').value, metas = [];
+  day.rooms.forEach(room => room.events.slice().sort((a, b) => runSheetSortKey(a) - runSheetSortKey(b)).forEach(ev => {
+    if ((!gf || ev.group === gf) && isCaptainEvent(ev)) metas.push(captainMeta(day, room.name, ev));
+  }));
+  printCaptainReports(metas);
+});
 function toggleBuffetPanel(beo, title, sub) {
   if (diagramPanel.classList.contains('open') && openBuffetBeo === beo) closeDiagramPanel();
   else openBuffetPanel(beo, title, sub);
@@ -3545,7 +3647,7 @@ function renderRunSheet(groupFilter) {
         : '';
       return `<div class="run-sheet-event ${runSheetSetupClass(ev)}">
         <div class="run-sheet-event-head">
-          <span>${revTag}${td(ev.label)}${ev.group ? ` — ${ev.group}` : ''}${setChip}</span>
+          <span>${revTag}${td(ev.label)}${ev.group ? ` — ${ev.group}` : ''}${setChip}<button class="cr-btn no-print-hide" title="${t('captain_btn')}" data-date="${day.date}" data-room="${room.name.replace(/"/g, '&quot;')}" data-beo="${ev.beoNumber || ''}" data-label="${(ev.label || '').replace(/"/g, '&quot;')}" onclick="printCaptainForCard(this)">🧾</button></span>
           <span class="run-sheet-time">${runSheetTimeRange(ev)}</span>
         </div>
         ${setupHtml}${eventHtml}${avHtml}
