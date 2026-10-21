@@ -2,30 +2,43 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Buffet Line Builder</title>
 <style>
-:root{--bg:#f3f1ea;--card:#fff;--ink:#1b2430;--mute:#667385;--line:#cfd5dc;--accent:#1f5f8b;--warn:#b8323a}
+:root{--bg:#f4f7fa;--card:#fff;--ink:#1b2a38;--mute:#5d6f80;--faint:#8798a8;--line:#d3dde7;--accent:#3f7ba6;--accent-d:#2d5f84;--accent-l:#e3eff8;--warn:#b0455a;--gold:#6f9bb8;--sw-draw:#6f9bb8;--sw-list:#4f8f7d;--sw-pans:#6b7fd4;--sw-cap:#d9a441;--sw-lab:#b0455a}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
-header{background:#1b2430;color:#f5f2eb;padding:10px 18px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
-header h1{font-size:17px;margin:0}header small{color:#aeb9c7}
-header .sp{margin-left:auto;display:flex;gap:8px;align-items:center}
-main{max-width:1500px;margin:0 auto;padding:14px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:12px}
-.card h2{font-size:14px;margin:0 0 8px}
-button{font:inherit;padding:5px 10px;border:1px solid var(--line);background:#fff;border-radius:6px;cursor:pointer;color:var(--ink)}
-button:hover{border-color:var(--accent)}button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
-button.danger{color:var(--warn)}button.sm{padding:4px 9px}
-input,select{font:inherit;padding:5px 7px;border:1px solid var(--line);border-radius:5px;background:#fff;color:var(--ink);min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 'Segoe UI',-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;padding:26px 36px 60px}
+.wrap{max-width:1500px;margin:0 auto}
+.top{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px}
+h1.brand{font-weight:700;font-size:30px;letter-spacing:-.5px;color:var(--accent-d);margin:0}
+.subtitle{color:var(--mute);margin-top:2px}
+.top .sp{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 18px;margin-bottom:14px}
+.card h2{font-size:15px;margin:0;color:var(--ink)}
+.sec-head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:10px}
+.sec.off{display:none}
+button{font:inherit;padding:6px 14px;border:1px solid var(--line);background:#fff;border-radius:18px;cursor:pointer;color:var(--ink);transition:all .15s ease}
+button:hover{border-color:var(--accent)}button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}button.primary:hover{background:var(--accent-d)}
+button.danger{color:var(--warn)}button.sm{padding:4px 11px;font-size:13px}
+input,select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);min-width:0}
+input:focus,select:focus{outline:2px solid var(--accent-l);border-color:var(--accent)}
 .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}
 .ctl{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
 .ctl label,.meta label{display:flex;gap:6px;align-items:center}
 .ctl input[type=number]{width:64px}
-.meta{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
+.meta{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px}
 .meta label{flex-direction:column;align-items:stretch;gap:3px;font-size:12px;color:var(--mute)}
 .meta input{font-size:14px;color:var(--ink)}
 .hint{font-size:12.5px;color:var(--mute)}
 .arow{display:grid;grid-template-columns:1fr 80px auto;gap:6px;margin-bottom:5px}
-details>summary{cursor:pointer;color:var(--accent)}
-#keyBox{background:#fff;color:#141a21}
+details>summary{cursor:pointer;color:var(--accent-d)}
+.toggles{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
+.toggles .lead{font-size:12px;color:var(--mute);margin-right:4px}
+.toggle{display:flex;align-items:center;gap:8px;padding:8px 16px;background:#fff;border:1px solid var(--line);border-radius:20px;font-size:13px;color:var(--mute);cursor:pointer;user-select:none}
+.toggle:hover{border-color:var(--accent)}
+.toggle .sw{width:11px;height:11px;border-radius:3px;background:var(--sw);opacity:.35}
+.toggle.on{background:var(--accent-l);border-color:var(--accent);color:var(--ink)}
+.toggle.on .sw{opacity:1}
+.toggle .tag{font-size:10px;color:var(--faint);letter-spacing:.3px}
+.toggles .gap{flex:1}
+#listBox,#keyBox{background:#fff;color:#141a21}
 @media (max-width:700px){.meta{grid-template-columns:1fr}}
 @media print{
   body{background:#fff;padding:0.35in;color:#141a21}
@@ -68,20 +81,27 @@ details>summary{cursor:pointer;color:var(--accent)}
 
 }
 </style><style id="pageStyle"></style></head><body>
-<header><h1>Buffet Line Builder</h1><small>Add the tables and chafers, drag them where they go, type what goes in each one, print.</small>
-  <span class="sp"><button id="btnNew">New</button><button id="btnPrint" class="primary">🖨 Print (one landscape page)</button><label class="hint" style="margin-left:6px;color:inherit"><input type="checkbox" id="capOn" checked> + captain&rsquo;s report</label><button id="btnCap" title="Print just the captain's report form">🧾 Captain&rsquo;s report only</button></span></header>
-<main>
-  <div class="card">
-    <div class="meta">
-      <label>Event / group<input id="mTitle" placeholder="e.g. Texas A&amp;M Football — Friday Night Dinner"></label>
-      <label>Date &amp; time<input id="mDate" placeholder="e.g. Fri, Oct 9 · 6:00 PM"></label>
-      <label>Room<input id="mRoom" placeholder="e.g. Windsor I &amp; II &amp; III"></label>
-    </div>
-    <div class="bar"><span class="hint">Saved on this computer:</span><select id="saved"></select><button id="btnDel" class="sm danger">Delete this one</button><span class="hint" id="savedHint"></span></div>
-  </div>
-  <div class="card" id="builder"></div>
-  <div class="card"><h2>What will print</h2><div id="keyBox"></div></div>
-</main>
+<div class="wrap">
+<div class="top"><div><h1 class="brand">Buffet Builder</h1><div class="subtitle">Draw the line, count the pans, print the sheet.</div></div>
+  <span class="sp"><button id="btnNew">New</button><span class="hint">Saved here:</span><select id="saved"></select><button id="btnDel" class="sm danger">Delete this one</button><span class="hint" id="savedHint"></span></span></div>
+<div class="card"><div class="meta">
+  <label>Event / group<input id="mTitle" placeholder="e.g. Texas A&amp;M Football — Friday Night Dinner"></label>
+  <label>Date &amp; time<input id="mDate" placeholder="e.g. Fri, Oct 9 · 6:00 PM"></label>
+  <label>Room<input id="mRoom" placeholder="e.g. Windsor I &amp; II &amp; III"></label>
+</div></div>
+<div class="toggles" id="toggles"><span class="lead">Show &amp; print:</span>
+  <span class="toggle" data-layer="drawing"><i class="sw" style="--sw:var(--sw-draw)"></i>Drawing</span>
+  <span class="toggle" data-layer="list"><i class="sw" style="--sw:var(--sw-list)"></i>Numbered list</span>
+  <span class="toggle" data-layer="pans"><i class="sw" style="--sw:var(--sw-pans)"></i>Pan counts</span>
+  <span class="toggle" data-layer="captain"><i class="sw" style="--sw:var(--sw-cap)"></i>Captain&rsquo;s report</span>
+  <span class="toggle" data-layer="labels" title="Label cards print on their own sheets (Avery 2 x 4 in), with their own Print button"><i class="sw" style="--sw:var(--sw-lab)"></i>Label cards <span class="tag">own sheets</span></span>
+  <span class="gap"></span><button id="btnPrint" class="primary">🖨 Print what&rsquo;s switched on</button></div>
+<section class="card sec" id="secDrawing"><div class="sec-head"><h2>Drawing</h2><span class="hint">Add the tables and chafers, drag them where they go, type what goes in each one.</span></div><div id="builder"></div></section>
+<section class="card sec" id="secList"><div class="sec-head"><h2>The line, in order</h2><span class="hint">These numbers match the drawing, the pan counts and the labels.</span></div><div id="listBox"></div></section>
+<section class="card sec" id="secPans"><div class="sec-head"><h2>Pan counts</h2><span class="hint">Initial set, added during the event, leftover. Prints beside the numbered list.</span></div><div id="panTable"></div><div class="bar"><button class="sm" id="copyPans">Copy table for Excel</button><span class="hint" id="copyHint"></span></div></section>
+<section class="card sec" id="secCaptain"><div class="sec-head"><h2>Captain&rsquo;s report</h2><span class="hint">A fill-in form for issues and complaints. It prints as the last page, with the event, date and room above filled in.</span></div><div class="bar" style="margin-top:0"><button class="sm" id="btnCap">🧾 Print the captain&rsquo;s report only</button></div></section>
+<section class="card sec" id="secLabels"><div class="sec-head"><h2>Label cards</h2><span class="hint">2 x 4 in cards, 10 per sheet: one per dish. Untick the ones you already have.</span></div><div class="bar" style="margin:0 0 6px"><button class="primary sm" id="labPrint">🖨 Print the cards</button><button class="sm" id="labTest">Print a test sheet (outlines only)</button><label class="hint"><input type="checkbox" id="labOutline"> thin outline on each card</label><b id="labelCount" class="hint"></b></div><div id="labelTable"></div><div id="labelPrev" style="margin-top:8px"></div></section>
+</div>
 <div id="printSheet"></div>
 <div id="capSheet"></div>
 <div id="labelSheet"></div>
@@ -364,13 +384,15 @@ function buffetHtml(layout, L) {
   const names = L.shapes || {};
   const legend = Object.keys(BUFFET_SHAPES).filter(k => used[k] && k !== 'custom').map(k => `${buffetEsc(names[k] || BUFFET_SHAPES[k].name)} ${BUFFET_SHAPES[k].dims}`).join(' · ');
   const scale = `<div class="buffet-legend">${buffetEsc(L.scale || 'Drawn to scale: 6 ft table, 30 in wide')}${legend ? ' — ' + legend : ''}</div>`;
-  const keyList = arr.length ? `<ol class="buffet-key">${arr.map(a => `<li><b>${a.n}</b><span>${buffetEsc(buffetItemText(a.it))}</span></li>`).join('')}</ol>` : '';
+  const sh = L.show || {}, showD = sh.drawing !== false, showK = sh.list !== false, showP = sh.pans !== false;
+  const keyList0 = arr.length ? `<ol class="buffet-key">${arr.map(a => `<li><b>${a.n}</b><span>${buffetEsc(buffetItemText(a.it))}</span></li>`).join('')}</ol>` : '';
+  const keyList = showK ? keyList0 : '';
   // Pan-count print: the numbered list (so the numbers on the drawing mean something) sits beside the pan table; long builds stack them.
-  const key = L.pantable ? (arr.length ? `<div class="bpt-layout${buffetPanRows(lay).length > 18 ? ' bpt-stack' : ''}"><div class="bpt-keycol">${keyList}</div><div class="bpt-tablecol">${buffetPanTableHtml(lay, L)}</div></div>` : '') : keyList;
+  const key = L.pantable ? (!arr.length ? '' : !showP ? keyList : !showK ? `<div class="bpt-layout bpt-solo"><div class="bpt-tablecol">${buffetPanTableHtml(lay, L)}</div></div>` : `<div class="bpt-layout${buffetPanRows(lay).length > 18 ? ' bpt-stack' : ''}"><div class="bpt-keycol">${keyList}</div><div class="bpt-tablecol">${buffetPanTableHtml(lay, L)}</div></div>`) : keyList;
   const assign = (lay.assignments || []).filter(a => a && (a.label || a.count != null && a.count !== ''))
     .map(a => `<li><span>${buffetEsc(a.label)}</span><b>${buffetEsc(a.count)}</b></li>`).join('');
   const assignBox = assign ? `<div class="buffet-assign"><div class="buffet-assign-title">${buffetEsc(L.assignments || 'Assignments')}</div><ul>${assign}</ul></div>` : '';
-  return `<div class="buffet-block${fit.over ? ' buffet-over' : ''}">${draft}${note}<div class="buffet-wrap"><div class="buffet-diagram">${arr.length ? buffetSvg(lay, L) : ''}</div>${scale}${key}${assignBox}</div></div>`;
+  return `<div class="buffet-block${fit.over ? ' buffet-over' : ''}">${draft}${note}<div class="buffet-wrap">${showD ? `<div class="buffet-diagram">${arr.length ? buffetSvg(lay, L) : ''}</div>${scale}` : ''}${key}${assignBox}</div></div>`;
 }
 
 // ---- Captain's report: a one-page, fill-in-by-hand form that prints after the buffet sheet. Top boxes are pre-filled from the event.
@@ -418,6 +440,7 @@ const BUFFET_CSS = `
 .bpt-layout{display:flex;gap:14px;align-items:flex-start}.bpt-keycol{flex:0 0 36%}.bpt-tablecol{flex:1;min-width:0}
 .bpt-layout .buffet-key{columns:1;margin:4px 0 0}.bpt-layout.bpt-stack{display:block}.bpt-stack .bpt-keycol{width:100%}.bpt-stack .buffet-key{columns:4;column-gap:12px}.bpt-stack .bpt-tablecol{margin-top:6px}
 .bpt-tablecol .bpt-wrap{margin-top:4px}
+.bpt-solo .bpt-tablecol{width:100%}
 .bpt{border-collapse:collapse;width:100%;table-layout:fixed;font-size:11px;color:inherit}
 .bpt th:nth-child(2),.bpt td:nth-child(2){width:17%}.bpt th:nth-child(n+3),.bpt td:nth-child(n+3){width:10.5%}
 .bpt td{overflow-wrap:anywhere}
@@ -456,7 +479,9 @@ const $ = id => document.getElementById(id);
 const esc = buffetEsc;
 const LBL = { start: 'START', assignments: 'Assignments', draft: 'DRAFT', lines: n => `Set up ${n} identical lines` };
 const STORE = 'buffetBuilder.v1';
-let db = { current: null, layouts: {} }, work = null, meta = { title: '', date: '', room: '' }, selIdx = -1, zoom = 4, saveTimer = null, selSet = new Set(), marq = null, panOpen = false, labOpen = false;
+let db = { current: null, layouts: {} }, work = null, meta = { title: '', date: '', room: '' }, selIdx = -1, zoom = 4, saveTimer = null, selSet = new Set(), marq = null;
+const LAYER_KEY = 'buffetBuilder.layers', layers = { drawing: true, list: true, pans: true, captain: true, labels: false };
+try { Object.assign(layers, JSON.parse(localStorage.getItem(LAYER_KEY) || '{}')); } catch (e) {}
 function say(msg) { const h = $('savedHint'); if (h) { h.textContent = msg; } }
 function renderPreview() { renderKey(); }
 
@@ -524,7 +549,7 @@ function drawCanvas() {
   });
   if (marq) g += `<rect x="${Math.min(marq.x0, marq.x1)}" y="${Math.min(marq.y0, marq.y1)}" width="${Math.abs(marq.x1 - marq.x0)}" height="${Math.abs(marq.y1 - marq.y0)}" fill="rgba(31,95,139,.12)" stroke="#1f5f8b" stroke-width=".7" stroke-dasharray="2 1.5"/>`;
   svg.innerHTML = g;
-  if (typeof renderPanTable === 'function') { renderPanTable(); if (labOpen) renderLabelBox(); }
+  if (typeof renderPanTable === 'function') { renderPanTable(); if (layers.labels) renderLabelBox(); }
 }
 // Keyboard on the table (arrows nudge, Delete/Backspace removes the selection). Listens on the whole page, but never while you are typing in a box.
 function canvasKey(ev) {
@@ -586,7 +611,7 @@ function renderSelPanel() {
   p.innerHTML = `<b>#${n} &middot; ${BUFFET_SHAPES[it.shape].name}</b> <input id="selLabel" value="${esc(it.label)}" placeholder="What goes in it (e.g. BBQ pork)" style="flex:1;min-width:240px">` +
     `<button class="sm" id="selRot">⟳ Turn 90°</button><button class="sm" id="selDup">Duplicate</button><button class="sm danger" id="selDel">Delete</button>` +
     (it.shape === 'custom' ? `<label class="hint">along <input id="selW" type="number" value="${it.w || 12}" style="width:60px"> across <input id="selD" type="number" value="${it.d || 12}" style="width:60px"> in</label>` : '');
-  $('selLabel').oninput = ev => { it.label = ev.target.value; touch(); renderKey(); };
+  $('selLabel').oninput = ev => { it.label = ev.target.value; touch(); renderKey(); renderPanTable(); if (layers.labels) renderLabelBox(); };
   $('selRot').onclick = () => { it.rot = it.rot === 90 ? 0 : 90; touch(); drawCanvas(); renderKey(); };
   $('selDup').onclick = () => { const c = JSON.parse(JSON.stringify(it)); c.x += buffetDims(it).w + 4; work.items.push(c); selIdx = work.items.length - 1; touch(); drawCanvas(); renderKey(); renderSelPanel(); };
   $('selDel').onclick = () => { work.items.splice(selIdx, 1); selIdx = -1; touch(); drawCanvas(); renderKey(); renderSelPanel(); };
@@ -615,13 +640,6 @@ function renderBuilder() {
   wrap.innerHTML = '<svg id="cv" tabindex="0" style="height:auto;display:block;touch-action:none;outline:none;-webkit-user-select:none;user-select:none"></svg>';
   b.appendChild(wrap);
   const sp = document.createElement('div'); sp.id = 'selPanel'; sp.className = 'bar'; sp.style.alignItems = 'center'; b.appendChild(sp);
-  const pb = document.createElement('details'); pb.id = 'panBox'; pb.style.margin = '8px 0'; pb.open = panOpen;
-  pb.innerHTML = '<summary><b>Pan counts</b> <span class="hint">(initial set, added during the event, leftover; prints under the drawing)</span></summary><div id="panTable" style="margin-top:6px"></div><div class="bar"><button class="sm" id="copyPans">Copy table for Excel</button><span class="hint" id="copyHint"></span></div>';
-  b.appendChild(pb); pb.ontoggle = () => { panOpen = pb.open; };
-  const lb = document.createElement('details'); lb.id = 'labBox'; lb.style.margin = '8px 0'; lb.open = labOpen;
-  lb.innerHTML = `<summary><b>Label cards</b> <span class="hint">(2 x 4 in cards, 10 per sheet: one per dish; untick the ones you already have)</span></summary><div class="bar" style="margin:6px 0"><button class="primary sm" id="labPrint">🖨 Print the cards</button><button class="sm" id="labTest">Print a test sheet (outlines only)</button><label class="hint"><input type="checkbox" id="labOutline"> thin outline on each card</label><b id="labelCount" class="hint"></b></div><div id="labelTable"></div><div id="labelPrev" style="margin-top:8px"></div>`;
-  b.appendChild(lb); lb.ontoggle = () => { labOpen = lb.open; if (lb.open) renderLabelBox(); };
-  $('labPrint').onclick = () => printLabels(false); $('labTest').onclick = () => printLabels(true); if (lb.open) setTimeout(renderLabelBox, 0); if (document.fonts && document.fonts.load) document.fonts.load('800 40px Nunito').then(() => { if (labOpen) renderLabelBox(); });
   const ad = document.createElement('details'); ad.style.marginTop = '12px'; ad.open = !!work.assignments.length;
   ad.innerHTML = '<summary><b>Assignments</b> <span class="hint">(optional: label + number, e.g. Carvers 2)</span></summary>'; b.appendChild(ad);
   work.assignments.forEach((a, i) => {
@@ -714,7 +732,7 @@ async function printLabels(test) {
 }
 
 function renderKey() {
-  $('keyBox').innerHTML = buffetHtml(work, Object.assign({}, LBL, { pantable: true })) || '<span class="hint">Add something to the table to see it here.</span>';
+  $('listBox').innerHTML = (work.items.length ? buffetHtml(work, Object.assign({}, LBL, { pantable: false, show: { drawing: false, list: true, pans: false } })) : '') || '<span class="hint">Add something to the table to see it here.</span>';
   const f = $('fit'); if (f) {
     const x = buffetFit(work), bits = [];
     bits.push(x.over ? `<b style="color:var(--warn)">Runs past the tables: needs ${x.need}, you have ${x.tables}.</b>` : `Fits on the tables (uses about ${x.need} of ${x.tables}).`);
@@ -724,14 +742,18 @@ function renderKey() {
   }
 }
 function printNow() {
-  const s = $('printSheet'), heads = [meta.date, meta.room].filter(Boolean).map(esc).join(' &middot; ');
-  s.innerHTML = `<div class="bps-head"><h2>${esc(meta.title || 'Buffet line')}</h2><div>${heads}<br>Buffet layout</div></div>` + buffetHtml(work, Object.assign({}, LBL, { pantable: true }));
-  const nrows = buffetPanRows(work).length; s.classList.toggle('mid', nrows > 14 && nrows <= 18); s.classList.toggle('dense', nrows > 36);
-  // Fit one landscape page: measure at the printed width; shrink a little if it overflows (very long builds continue on page 2).
-  s.style.zoom = ''; s.style.cssText += ';display:block;position:fixed;left:-99999px;top:0;width:10.3in;visibility:hidden';
-  const h = s.getBoundingClientRect().height, avail = 7.7 * 96;
-  s.style.cssText = ''; if (h > avail && nrows <= 30) s.style.zoom = String(Math.max(0.72, avail / h).toFixed(3));
-  $('capSheet').innerHTML = $('capOn').checked ? capHtml() : '';
+  const any = layers.drawing || layers.list || layers.pans, s = $('printSheet');
+  if (!any && !layers.captain) { alert('Nothing is switched on to print. Turn on Drawing, Numbered list, Pan counts or Captain\u2019s report above.'); return; }
+  if (any) {
+    const heads = [meta.date, meta.room].filter(Boolean).map(esc).join(' &middot; ');
+    s.innerHTML = `<div class="bps-head"><h2>${esc(meta.title || 'Buffet line')}</h2><div>${heads}<br>Buffet layout</div></div>` + buffetHtml(work, Object.assign({}, LBL, { pantable: true, show: { drawing: layers.drawing, list: layers.list, pans: layers.pans } }));
+    const nrows = buffetPanRows(work).length; s.classList.toggle('mid', nrows > 14 && nrows <= 18); s.classList.toggle('dense', nrows > 36);
+    // Fit one landscape page: measure at the printed width; shrink a little if it overflows (very long builds continue on page 2).
+    s.style.zoom = ''; s.style.cssText += ';display:block;position:fixed;left:-99999px;top:0;width:10.3in;visibility:hidden';
+    const h = s.getBoundingClientRect().height, avail = 7.7 * 96;
+    s.style.cssText = ''; if (h > avail && nrows <= 30) s.style.zoom = String(Math.max(0.72, avail / h).toFixed(3));
+  } else s.innerHTML = '';
+  $('capSheet').innerHTML = layers.captain ? capHtml() : '';
   $('pageStyle').textContent = '@page{size:landscape;margin:0}';
   document.body.classList.add('printing'); window.print();
 }
@@ -743,7 +765,15 @@ window.addEventListener('afterprint', () => document.body.classList.remove('prin
 ['mTitle', 'mDate', 'mRoom'].forEach(id => { $(id).oninput = () => { meta.title = $('mTitle').value; meta.date = $('mDate').value; meta.room = $('mRoom').value; touch(); }; });
 $('btnNew').onclick = startNew;
 $('btnPrint').onclick = printNow; $('btnCap').onclick = printCapOnly;
-try { $('capOn').checked = localStorage.getItem('buffetBuilder.cap') !== '0'; } catch (x) {} $('capOn').onchange = () => { try { localStorage.setItem('buffetBuilder.cap', $('capOn').checked ? '1' : '0'); } catch (x) {} };
+$('labPrint').onclick = () => printLabels(false); $('labTest').onclick = () => printLabels(true);
+$('copyPans').onclick = async () => { const tsv = buffetPanTsv(work); try { await navigator.clipboard.writeText(tsv); $('copyHint').textContent = 'Copied - paste into Excel.'; } catch (x) { prompt('Copy this (Ctrl/Cmd+C):', tsv); } };
+function applyLayers() {
+  [['drawing', 'secDrawing'], ['list', 'secList'], ['pans', 'secPans'], ['captain', 'secCaptain'], ['labels', 'secLabels']].forEach(([k, id]) => $(id).classList.toggle('off', !layers[k]));
+  document.querySelectorAll('.toggle').forEach(el => el.classList.toggle('on', !!layers[el.dataset.layer]));
+  if (layers.labels) { renderLabelBox(); if (document.fonts && document.fonts.load) document.fonts.load('800 40px Nunito').then(() => { if (layers.labels) renderLabelBox(); }); }
+}
+document.querySelectorAll('.toggle').forEach(el => { el.onclick = () => { layers[el.dataset.layer] = !layers[el.dataset.layer]; try { localStorage.setItem(LAYER_KEY, JSON.stringify(layers)); } catch (x) {} applyLayers(); }; });
+applyLayers();
 $('saved').onchange = ev => { if (ev.target.value) openId(ev.target.value); };
 $('btnDel').onclick = () => { const id = db.current; if (!id || !db.layouts[id]) return; if (!confirm('Delete "' + label(id) + '" from this computer?')) return; delete db.layouts[id]; db.current = null; persist(); startNew(); fillSaved(); };
 buffetInstallCss(); loadDb(); fillSaved();
