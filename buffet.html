@@ -39,17 +39,24 @@ details>summary{cursor:pointer;color:var(--accent-d)}
 .toggle .tag{font-size:10px;color:var(--faint);letter-spacing:.3px}
 .toggles .gap{flex:1}
 #listBox,#keyBox{background:#fff;color:#141a21}
+.empty{text-align:center;color:var(--mute);padding:30px 18px}.empty b{color:var(--ink)}
+.cpick select{padding:7px 8px}.cpick .grow{flex:1;min-width:260px}
+.ot{border-collapse:collapse;width:100%;font-size:13px}.ot th,.ot td{border:1px solid var(--line);padding:3px 5px;vertical-align:top}.ot th{background:#f1f3f6;font-size:12px;text-align:left}.ot input,.ot select,.ot textarea{width:100%;padding:3px 5px;border:1px solid var(--line);border-radius:4px;font:inherit;font-size:13px}.ot textarea{min-height:46px;resize:vertical}.ot .nostated{border-color:var(--warn);color:var(--warn)}
+#ordSheet h2{margin:0 0 2px;font-size:19px}#ordSheet .sub{font-size:12px;color:#444;margin-bottom:8px}#ordSheet table{border-collapse:collapse;width:100%;font-size:10.5px}#ordSheet th,#ordSheet td{border:1px solid #777;padding:2px 4px;vertical-align:top}#ordSheet th{background:#e9edf1;text-align:left;font-size:10px}#ordSheet tr.sec td{background:#dde4eb;font-weight:700;font-size:11px}#ordSheet .q{color:#444;font-size:10px}#ordSheet .ns{color:#b8323a;font-weight:700}#ordSheet tr{break-inside:avoid}#ordSheet thead{display:table-header-group}
 @media (max-width:700px){.meta{grid-template-columns:1fr}}
 @media print{
   body{background:#fff;padding:0.35in;color:#141a21}
-  body.printing>*:not(#printSheet):not(#capSheet){display:none!important}
+  body.printing>*:not(#printSheet):not(#ordSheet):not(#capSheet){display:none!important}
   body.printing #printSheet{display:block!important}
+  body.printing #printSheet:empty{display:none!important}
+  body.printing #ordSheet{display:block!important;break-before:page;page-break-before:always;color:#141a21}
+  body.printing #ordSheet:empty{display:none!important}
   body.printing #capSheet{display:block!important;break-before:page;page-break-before:always;color:#000}
   body.printing #capSheet:empty{display:none!important}
   body.printing-cap>*:not(#capSheet){display:none!important}
   body.printing-cap #capSheet{display:block!important;color:#000}
 }
-#printSheet,#labelSheet,#capSheet{display:none}
+#printSheet,#labelSheet,#capSheet,#ordSheet{display:none}
 .lpage{box-sizing:border-box;width:8.5in;height:11in;padding:.5in .25in;display:grid;grid-template-columns:4in 4in;grid-template-rows:repeat(5,2in);break-after:page;page-break-after:always;background:#fff;color:#000}
 .lpage:last-child{break-after:auto;page-break-after:auto}
 .lcard{box-sizing:border-box;width:4in;height:2in;padding:.14in .2in;display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden}
@@ -84,25 +91,30 @@ details>summary{cursor:pointer;color:var(--accent-d)}
 <div class="wrap">
 <div class="top"><div><h1 class="brand">Buffet Builder</h1><div class="subtitle">Draw the line, count the pans, print the sheet.</div></div>
   <span class="sp"><button id="btnNew">New</button><span class="hint">Saved here:</span><select id="saved"></select><button id="btnDel" class="sm danger">Delete this one</button><span class="hint" id="savedHint"></span></span></div>
-<div class="card"><div class="meta">
+<div class="card cpick" id="compassBox"><div class="sec-head"><h2>Start from a Compass event</h2><span class="hint" id="cHint">Loading Compass&hellip;</span></div>
+  <div class="bar" style="margin:0"><select id="cDay"></select><select id="cEvent" class="grow"></select><label class="hint"><input type="checkbox" id="cAll"> every event</label><button class="primary sm" id="cUse">Use this event</button></div></div>
+<div class="card"><div id="metaLine" class="hint" style="margin:0 0 8px"></div><div class="meta">
   <label>Event / group<input id="mTitle" placeholder="e.g. Texas A&amp;M Football — Friday Night Dinner"></label>
   <label>Date &amp; time<input id="mDate" placeholder="e.g. Fri, Oct 9 · 6:00 PM"></label>
   <label>Room<input id="mRoom" placeholder="e.g. Windsor I &amp; II &amp; III"></label>
 </div></div>
-<div class="toggles" id="toggles"><span class="lead">Show &amp; print:</span>
-  <span class="toggle" data-layer="drawing"><i class="sw" style="--sw:var(--sw-draw)"></i>Drawing</span>
-  <span class="toggle" data-layer="list"><i class="sw" style="--sw:var(--sw-list)"></i>Numbered list</span>
+<div class="toggles" id="toggles"><span class="lead">Switch on what you need:</span>
+  <span class="toggle" data-layer="build"><i class="sw" style="--sw:var(--sw-draw)"></i>Build buffet</span>
   <span class="toggle" data-layer="pans"><i class="sw" style="--sw:var(--sw-pans)"></i>Pan counts</span>
+  <span class="toggle" data-layer="orders"><i class="sw" style="--sw:var(--sw-list)"></i>Order sheet</span>
   <span class="toggle" data-layer="captain"><i class="sw" style="--sw:var(--sw-cap)"></i>Captain&rsquo;s report</span>
   <span class="toggle" data-layer="labels" title="Label cards print on their own sheets (Avery 2 x 4 in), with their own Print button"><i class="sw" style="--sw:var(--sw-lab)"></i>Label cards <span class="tag">own sheets</span></span>
   <span class="gap"></span><button id="btnPrint" class="primary">🖨 Print what&rsquo;s switched on</button></div>
+<div class="card empty" id="emptyHint"><b>Nothing is switched on yet.</b><br>Pick an event above (or type one in), then switch on what you need: the buffet drawing, pan counts, the order sheet or the captain&rsquo;s report. Switch on several and Print puts them together on as few pages as it can.</div>
 <section class="card sec" id="secDrawing"><div class="sec-head"><h2>Drawing</h2><span class="hint">Add the tables and chafers, drag them where they go, type what goes in each one.</span></div><div id="builder"></div></section>
 <section class="card sec" id="secList"><div class="sec-head"><h2>The line, in order</h2><span class="hint">These numbers match the drawing, the pan counts and the labels.</span></div><div id="listBox"></div></section>
+<section class="card sec" id="secOrders"><div class="sec-head"><h2>Order sheet</h2><span class="hint">Drinks and packaged items only: who provides each one, who orders it, and who confirmed. Send it before the event and keep the replies.</span></div><div class="bar" style="margin:0 0 6px"><button class="primary sm" id="ordSuggest">Suggest from the BEO</button><button class="sm" id="ordAdd">+ Add a line</button><button class="sm" id="ordCopy">Copy for email / Excel</button><span class="hint" id="ordHint"></span></div><div id="ordTable"></div></section>
 <section class="card sec" id="secPans"><div class="sec-head"><h2>Pan counts</h2><span class="hint">Initial set, added during the event, leftover. Prints beside the numbered list.</span></div><div id="panTable"></div><div class="bar"><button class="sm" id="copyPans">Copy table for Excel</button><span class="hint" id="copyHint"></span></div></section>
 <section class="card sec" id="secCaptain"><div class="sec-head"><h2>Captain&rsquo;s report</h2><span class="hint">A fill-in form for issues and complaints. It prints as the last page, with the event, date and room above filled in.</span></div><div class="bar" style="margin-top:0"><button class="sm" id="btnCap">🧾 Print the captain&rsquo;s report only</button></div></section>
 <section class="card sec" id="secLabels"><div class="sec-head"><h2>Label cards</h2><span class="hint">2 x 4 in cards, 10 per sheet: one per dish. Untick the ones you already have.</span></div><div class="bar" style="margin:0 0 6px"><button class="primary sm" id="labPrint">🖨 Print the cards</button><button class="sm" id="labTest">Print a test sheet (outlines only)</button><label class="hint"><input type="checkbox" id="labOutline"> thin outline on each card</label><b id="labelCount" class="hint"></b></div><div id="labelTable"></div><div id="labelPrev" style="margin-top:8px"></div></section>
 </div>
 <div id="printSheet"></div>
+<div id="ordSheet"></div>
 <div id="capSheet"></div>
 <div id="labelSheet"></div>
 <script>
@@ -479,9 +491,9 @@ const $ = id => document.getElementById(id);
 const esc = buffetEsc;
 const LBL = { start: 'START', assignments: 'Assignments', draft: 'DRAFT', lines: n => `Set up ${n} identical lines` };
 const STORE = 'buffetBuilder.v1';
-let db = { current: null, layouts: {} }, work = null, meta = { title: '', date: '', room: '' }, selIdx = -1, zoom = 4, saveTimer = null, selSet = new Set(), marq = null;
-const LAYER_KEY = 'buffetBuilder.layers', layers = { drawing: true, list: true, pans: true, captain: true, labels: false };
-try { Object.assign(layers, JSON.parse(localStorage.getItem(LAYER_KEY) || '{}')); } catch (e) {}
+const EMPTY_META = { title: '', date: '', room: '', beo: '', gtd: null, set: null, time: '', eventNotes: '', day: '' };
+let db = { current: null, layouts: {} }, work = null, meta = Object.assign({}, EMPTY_META), selIdx = -1, zoom = 4, saveTimer = null, selSet = new Set(), marq = null;
+const layers = { build: false, pans: false, orders: false, captain: false, labels: false };   // everything starts switched off on purpose
 function say(msg) { const h = $('savedHint'); if (h) { h.textContent = msg; } }
 function renderPreview() { renderKey(); }
 
@@ -501,15 +513,16 @@ function touch() {
 function label(id) { const m = db.layouts[id].meta; return [m.title || 'Untitled buffet', m.date].filter(Boolean).join(' — '); }
 function fillSaved() {
   const ids = Object.keys(db.layouts).sort((a, b) => db.layouts[b].updated - db.layouts[a].updated);
-  $('saved').innerHTML = ids.length ? ids.map(id => `<option value="${id}">${esc(label(id))}</option>`).join('') : '<option value="">(nothing saved yet)</option>';
-  if (db.current && db.layouts[db.current]) $('saved').value = db.current;
+  $('saved').innerHTML = '<option value="">' + (ids.length ? '\u2014 pick a saved buffet \u2014' : '(nothing saved yet)') + '</option>' + ids.map(id => `<option value="${id}">${esc(label(id))}</option>`).join('');
+  $('saved').value = (db.current && db.layouts[db.current]) ? db.current : '';
 }
 function openId(id) {
   const rec = db.layouts[id]; if (!rec) return;
-  selSet = new Set(); db.current = id; meta = Object.assign({ title: '', date: '', room: '' }, rec.meta); work = buffetNormLayout(JSON.parse(JSON.stringify(rec.layout)));
-  work.assignments = work.assignments || []; selIdx = -1; $('mTitle').value = meta.title; $('mDate').value = meta.date; $('mRoom').value = meta.room; renderBuilder(); renderKey();
+  selSet = new Set(); db.current = id; meta = Object.assign({}, EMPTY_META, rec.meta); work = buffetNormLayout(JSON.parse(JSON.stringify(rec.layout)));
+  work.assignments = work.assignments || []; selIdx = -1; fillMeta(); renderBuilder(); renderKey(); renderOrders();
 }
-function startNew() { selSet = new Set(); db.current = null; work = blank(); meta = { title: '', date: '', room: '' }; selIdx = -1; $('mTitle').value = $('mDate').value = $('mRoom').value = ''; $('savedHint').textContent = ''; renderBuilder(); renderKey(); }
+function fillMeta() { $('mTitle').value = meta.title; $('mDate').value = meta.date; $('mRoom').value = meta.room; $('metaLine').textContent = [meta.beo ? 'BEO ' + meta.beo : '', (meta.gtd != null || meta.set != null) ? `Gtd ${meta.gtd == null ? '-' : meta.gtd} / Set ${meta.set == null ? '-' : meta.set}` : '', meta.beo ? 'from Compass' : ''].filter(Boolean).join(' \u00b7 '); }
+function startNew() { selSet = new Set(); db.current = null; work = blank(); meta = Object.assign({}, EMPTY_META); selIdx = -1; fillMeta(); $('savedHint').textContent = ''; $('saved').value = ''; renderBuilder(); renderKey(); renderOrders(); }
 
 // ---------- items
 function newItem(shape) {
@@ -742,43 +755,158 @@ function renderKey() {
   }
 }
 function printNow() {
-  const any = layers.drawing || layers.list || layers.pans, s = $('printSheet');
-  if (!any && !layers.captain) { alert('Nothing is switched on to print. Turn on Drawing, Numbered list, Pan counts or Captain\u2019s report above.'); return; }
-  if (any) {
+  const sheetOn = layers.build || layers.pans, s = $('printSheet');
+  if (!sheetOn && !layers.orders && !layers.captain) { alert('Nothing is switched on to print. Switch on Build buffet, Pan counts, Order sheet or Captain\u2019s report above.'); return; }
+  if (sheetOn) {
     const heads = [meta.date, meta.room].filter(Boolean).map(esc).join(' &middot; ');
-    s.innerHTML = `<div class="bps-head"><h2>${esc(meta.title || 'Buffet line')}</h2><div>${heads}<br>Buffet layout</div></div>` + buffetHtml(work, Object.assign({}, LBL, { pantable: true, show: { drawing: layers.drawing, list: layers.list, pans: layers.pans } }));
+    s.innerHTML = `<div class="bps-head"><h2>${esc(meta.title || 'Buffet line')}</h2><div>${heads}<br>Buffet layout</div></div>` + buffetHtml(work, Object.assign({}, LBL, { pantable: true, show: { drawing: layers.build, list: true, pans: layers.pans } }));
     const nrows = buffetPanRows(work).length; s.classList.toggle('mid', nrows > 14 && nrows <= 18); s.classList.toggle('dense', nrows > 36);
     // Fit one landscape page: measure at the printed width; shrink a little if it overflows (very long builds continue on page 2).
     s.style.zoom = ''; s.style.cssText += ';display:block;position:fixed;left:-99999px;top:0;width:10.3in;visibility:hidden';
     const h = s.getBoundingClientRect().height, avail = 7.7 * 96;
     s.style.cssText = ''; if (h > avail && nrows <= 30) s.style.zoom = String(Math.max(0.72, avail / h).toFixed(3));
   } else s.innerHTML = '';
+  $('ordSheet').innerHTML = layers.orders ? ordSheetHtml() : '';
   $('capSheet').innerHTML = layers.captain ? capHtml() : '';
   $('pageStyle').textContent = '@page{size:landscape;margin:0}';
   document.body.classList.add('printing'); window.print();
 }
-function capHtml() { return buffetCaptainHtml({ group: meta.title || '', event: '', date: meta.date || '', room: meta.room || '', beo: '' }); }
+function capHtml() { return buffetCaptainHtml({ group: meta.title || '', event: '', date: meta.date || '', room: meta.room || '', beo: meta.beo || '', gtd: meta.gtd, set: meta.set }); }
 function printCapOnly() { $('capSheet').innerHTML = capHtml(); $('pageStyle').textContent = '@page{size:landscape;margin:0}'; document.body.classList.add('printing-cap'); window.print(); }
 window.addEventListener('afterprint', () => document.body.classList.remove('printing', 'printing-labels', 'printing-cap'));
+
+
+// ---------- Order sheet (drinks and packaged items only: who provides, who orders, who confirmed)
+const ORD_SECS = ['Beverages', 'Packaged & grab-and-go', 'Other'];
+const ORD_LEX = [
+  ['Beverages', 'Gatorade', /gatorade/i], ['Beverages', 'Bottled water', /bottled water|bottle water/i],
+  ['Beverages', 'Milk (Fairlife, cartons, almond, lactose-free)', /fair ?life|milk in cartons|chocolate milk|almond milk|lactose-free/i],
+  ['Beverages', '100% fruit juice (bottles / dispensers)', /100% fruit juice|tropicana|juice bar/i], ['Beverages', 'Naked juices', /naked (juice|mango)/i],
+  ['Beverages', 'Core Power shakes', /core power/i], ['Beverages', 'Coffee, cold brew & hot water', /coffee|cold brew/i], ['Beverages', 'Creamer', /creamer/i],
+  ['Beverages', 'Hot chocolate packets', /hot chocolate/i], ['Beverages', 'Tea bags', /tea bags|tea packets/i], ['Beverages', 'Lemonade', /lemonade/i],
+  ['Beverages', 'Sodas (Coke, Diet Coke, Fresca, Dr Pepper, Sprite)', /\bsodas?\b|coke|fresca|dr\.? pepper|sprite/i], ['Beverages', 'Smoothies (made fresh)', /smoothie/i],
+  ['Beverages', 'Cups, lids & straws', /to-go cups|16 oz cups|cups, lids|lids & straws/i],
+  ['Packaged & grab-and-go', 'Yogurt cups', /yogurt cups/i], ['Packaged & grab-and-go', 'Drinkable yogurt (Chobani)', /drinkable yogurt/i], ['Packaged & grab-and-go', 'Cereal cups', /cereal/i],
+  ['Packaged & grab-and-go', 'Crackers (oyster, saltine)', /oyster|saltine/i], ['Packaged & grab-and-go', 'Granola', /granola/i], ['Packaged & grab-and-go', 'Uncrustables PB&J', /uncrustables/i],
+  ['Packaged & grab-and-go', 'Granola bars / packaged snacks (Nature Valley, Doritos)', /nature valley|doritos/i],
+  ['Packaged & grab-and-go', 'Spreads & packets (peanut butter, Nutella, jelly, cream cheese, honey)', /nutella|jelly|jams|cream cheese|peanut butter/i]];
+function ordProvider(win) {
+  const m = /provided by (?:the )?(hotel|team|client)|\(by (hotel|team)\)/i.exec(win); if (!m) return ''; const w = (m[1] || m[2]).toLowerCase(); return w === 'hotel' ? 'Hotel' : w === 'team' ? 'Team' : 'Client';
+}
+// Clauses of the BEO text: split on ; . : outside parentheses, so "(lactose-free; provided by hotel)" stays with its item.
+function ordClauses(txt) {
+  const out = []; let depth = 0, cur = '';
+  for (let i = 0; i < txt.length; i++) { const c = txt[i];
+    if (c === '(') depth++; else if (c === ')') depth = Math.max(0, depth - 1);
+    cur += c;
+    if (depth === 0 && (c === ';' || (c === '.' && /\s/.test(txt[i + 1] || ' ')))) { out.push(cur.trim()); cur = ''; } }
+  if (cur.trim()) out.push(cur.trim()); return out.filter(Boolean);
+}
+
+function ordSuggest() {
+  const clauses = ordClauses(meta.eventNotes || ''), rows = [];
+  ORD_LEX.forEach(([sec, name, re]) => {
+    const hits = clauses.filter(q => re.test(q)); if (!hits.length) return;
+    const withP = hits.find(q => ordProvider(q)), longest = hits.reduce((a, q) => (q.length <= 200 && q.length > a.length) ? q : a, hits[0]), s = (withP || longest).replace(/\s+/g, ' ');
+    rows.push({ sec, item: name, beo: s.length > 200 ? s.slice(0, 197) + '...' : s, prov: ordProvider(withP || ''), src: '', status: 'To order', by: '' });
+  });
+  return rows;
+}
+function renderOrders() {
+  const box = $('ordTable'); if (!box || !work) return; work.orders = work.orders || [];
+  const PR = ['', 'Hotel', 'Team', 'Client', 'Kitchen', 'Banquets'], ST = ['To order', 'Ordered', 'Received', 'Not needed'];
+  const rows = work.orders.map((o, i) => ({ o, i })).sort((a, b) => (ORD_SECS.indexOf(a.o.sec) - ORD_SECS.indexOf(b.o.sec)) || (a.i - b.i));
+  box.innerHTML = '<table class="ot"><thead><tr><th style="width:12%">Section</th><th style="width:16%">Item</th><th style="width:24%">What the BEO says</th><th style="width:9%">Provided by</th><th style="width:15%">Ordered by / source</th><th style="width:9%">Status</th><th style="width:13%">Confirmed (name, date)</th><th></th></tr></thead><tbody>' +
+    rows.map(({ o, i }) => `<tr data-i="${i}"><td><select data-f="sec">${ORD_SECS.map(s => `<option value="${esc(s)}"${o.sec === s ? ' selected' : ''}>${esc(s)}</option>`).join('')}</select></td>` +
+      `<td><input data-f="item" value="${esc(o.item)}"></td><td><textarea data-f="beo">${esc(o.beo)}</textarea></td>` +
+      `<td><select data-f="prov" class="${o.prov ? '' : 'nostated'}">${PR.map(p => `<option value="${p}"${p === o.prov ? ' selected' : ''}>${p || 'Not stated'}</option>`).join('')}</select></td>` +
+      `<td><input data-f="src" value="${esc(o.src)}" placeholder="who orders, from where"></td><td><select data-f="status">${ST.map(s => `<option${s === o.status ? ' selected' : ''}>${s}</option>`).join('')}</select></td>` +
+      `<td><input data-f="by" value="${esc(o.by)}"></td><td><button class="sm danger" data-del="1">✕</button></td></tr>`).join('') + '</tbody></table>' + (rows.length ? '' : '<div class="hint" style="margin-top:6px">No lines yet. Press <b>Suggest from the BEO</b> (after picking a Compass event) or add a line by hand.</div>');
+  box.querySelectorAll('tr[data-i]').forEach(tr => { const o = work.orders[parseInt(tr.dataset.i, 10)];
+    tr.querySelectorAll('[data-f]').forEach(inp => { inp.onchange = inp.oninput = () => { o[inp.dataset.f] = inp.value; if (inp.dataset.f === 'prov') inp.className = inp.value ? '' : 'nostated'; touch(); }; });
+    tr.querySelector('[data-del]').onclick = () => { work.orders.splice(parseInt(tr.dataset.i, 10), 1); touch(); renderOrders(); }; });
+}
+function ordSheetHtml() {
+  const rows = ((work && work.orders) || []).filter(o => o.status !== 'Not needed');
+  let h = `<h2>${esc(meta.title || 'Buffet')} &mdash; Order sheet</h2><div class="sub">${[meta.date, meta.room].filter(Boolean).map(esc).join(' &middot; ')}${meta.beo ? ' &middot; BEO ' + esc(meta.beo) : ''} &mdash; <b>Drinks and packaged items: who provides, who orders</b>. Please confirm each line in writing by ____________.</div>`;
+  h += '<table><thead><tr><th style="width:17%">Item</th><th style="width:30%">What the BEO says</th><th style="width:9%">Provided by</th><th style="width:16%">Ordered by / source</th><th style="width:9%">Status</th><th>Confirmed (name, date)</th></tr></thead><tbody>';
+  if (!rows.length) h += '<tr><td colspan="6" style="height:.6in"></td></tr><tr><td colspan="6" style="height:.6in"></td></tr><tr><td colspan="6" style="height:.6in"></td></tr>';
+  ORD_SECS.forEach(sec => { const rs = rows.filter(o => o.sec === sec); if (!rs.length) return; h += `<tr class="sec"><td colspan="6">${esc(sec)}</td></tr>` + rs.map(o => `<tr><td>${esc(o.item)}</td><td class="q">${esc(o.beo)}</td><td class="${o.prov ? '' : 'ns'}">${esc(o.prov || 'NOT STATED')}</td><td>${esc(o.src)}</td><td>${esc(o.status)}</td><td>${esc(o.by)}</td></tr>`).join(''); });
+  return h + '</tbody></table>';
+}
+function ordTsv() { return ['Section\tItem\tWhat the BEO says\tProvided by\tOrdered by / source\tStatus\tConfirmed'].concat(((work && work.orders) || []).map(o => [o.sec, o.item, o.beo, o.prov || 'NOT STATED', o.src, o.status, o.by].join('\t'))).join('\n'); }
+
+// ---------- Compass link: read the events (and any saved buffet layouts) from Compass itself, so nothing is retyped
+let compass = { days: [], layouts: {} }, curEvents = [];
+function extractJson(text, marker) {
+  const at = text.indexOf(marker); if (at < 0) return null; const start = at + marker.length;
+  let depth = 0, inStr = false, esc2 = false;
+  for (let i = start; i < text.length; i++) { const c = text[i];
+    if (inStr) { if (esc2) esc2 = false; else if (c === '\\') esc2 = true; else if (c === '"') inStr = false; continue; }
+    if (c === '"') inStr = true; else if (c === '{') depth++; else if (c === '}') { depth--; if (depth === 0) return JSON.parse(text.slice(start, i + 1)); } }
+  return null;
+}
+const fmtT = m => { const h = Math.floor(m / 60), mm = m % 60, ap = h >= 12 ? 'PM' : 'AM', h12 = h % 12 || 12; return `${h12}:${String(mm).padStart(2, '0')} ${ap}`; };
+function isServiceEvent(ev) {
+  if (ev.liveStart == null) return false;
+  if (/set[ -]?up|flip|storage|room hold|\bhold\b|load[ -]?in|walk[ -]?through|registration/i.test(ev.label || '') && !ev.eventNotes) return false;
+  return !!ev.eventNotes || /breakfast|lunch|dinner|buffet|reception|bar\b|break\b|banquet|meal|snack|brunch|tasting|hospitality|welcome/i.test(ev.label || '');
+}
+async function loadCompass() {
+  const hint = $('cHint');
+  try {
+    const r = await fetch('index.html', { cache: 'no-store' }); if (!r.ok) throw new Error(r.status); const txt = await r.text();
+    const data = extractJson(txt, 'const DATA = '); if (!data) throw new Error('no data');
+    compass.days = data.days || []; compass.layouts = extractJson(txt, 'const BUFFET_LAYOUTS = ') || {};
+    hint.textContent = `${compass.days.length} days from Compass (${Object.keys(compass.layouts).length} buffet${Object.keys(compass.layouts).length === 1 ? '' : 's'} already built)`;
+    const today = new Date(), iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    $('cDay').innerHTML = compass.days.map(d => `<option value="${d.date}">${esc(d.dateLabel)}</option>`).join('');
+    const pick = compass.days.find(d => d.date >= iso) || compass.days[compass.days.length - 1]; if (pick) $('cDay').value = pick.date;
+    fillEventPick();
+  } catch (e) { hint.textContent = 'Could not read Compass here, so type the event details by hand (everything else works).'; $('cUse').disabled = true; }
+}
+function fillEventPick() {
+  const day = compass.days.find(d => d.date === $('cDay').value); curEvents = [];
+  if (day) day.rooms.forEach(room => room.events.forEach(ev => { if ($('cAll').checked ? ev.liveStart != null : (isServiceEvent(ev) || compass.layouts[ev.beoNumber])) curEvents.push({ day, room, ev }); }));
+  curEvents.sort((a, b) => a.ev.liveStart - b.ev.liveStart || a.ev.group.localeCompare(b.ev.group));
+  $('cEvent').innerHTML = curEvents.length ? curEvents.map((x, i) => `<option value="${i}">${fmtT(x.ev.liveStart)} · ${esc(x.ev.group)} — ${esc(x.ev.label)} (${esc(x.room.name)})${compass.layouts[x.ev.beoNumber] ? ' ✓ buffet built' : ''}</option>`).join('') : '<option value="">(no meal or bar events on this day)</option>';
+}
+function useEvent() {
+  const x = curEvents[parseInt($('cEvent').value, 10)]; if (!x) return;
+  const { day, room, ev } = x, beo = ev.beoNumber || '';
+  const have = beo && Object.keys(db.layouts).find(k => { const m = db.layouts[k].meta || {}; return m.beo === beo && m.day === day.date; });
+  if (have) { openId(have); $('cHint').textContent = 'Opened what you already saved for this event.'; return; }
+  const time = ev.liveStart != null ? `${fmtT(ev.liveStart)} – ${fmtT(ev.liveEnd)}` : '';
+  meta = Object.assign({}, EMPTY_META, { title: `${ev.group} — ${ev.label}`, date: `${day.dateLabel} · ${time}`, room: room.name, beo, gtd: ev.gtd, set: ev.set, time, eventNotes: ev.eventNotes || '', day: day.date });
+  const built = compass.layouts[beo]; work = built ? buffetNormLayout(JSON.parse(JSON.stringify(built))) : blank(); work.assignments = work.assignments || [];
+  selSet = new Set(); selIdx = -1; db.current = newId(); fillMeta(); renderBuilder(); renderKey(); renderOrders(); touch();
+  $('cHint').textContent = built ? 'Loaded the buffet already built for this event.' : 'Event loaded. Switch on what you need below.';
+}
 
 // ---------- wiring
 ['mTitle', 'mDate', 'mRoom'].forEach(id => { $(id).oninput = () => { meta.title = $('mTitle').value; meta.date = $('mDate').value; meta.room = $('mRoom').value; touch(); }; });
 $('btnNew').onclick = startNew;
 $('btnPrint').onclick = printNow; $('btnCap').onclick = printCapOnly;
+$('cDay').onchange = fillEventPick; $('cAll').onchange = fillEventPick; $('cUse').onclick = useEvent;
+$('ordSuggest').onclick = () => { work.orders = work.orders || []; const have = new Set(work.orders.map(o => o.item)); const add = ordSuggest().filter(r => !have.has(r.item)); work.orders.push(...add); touch(); renderOrders(); $('ordHint').textContent = !meta.eventNotes ? 'Pick a Compass event first so there is BEO text to read, or add lines by hand.' : (add.length ? `Added ${add.length} line${add.length === 1 ? '' : 's'} from the BEO. Check each one and fill in who orders it.` : 'Nothing new to add.'); };
+$('ordAdd').onclick = () => { (work.orders = work.orders || []).push({ sec: 'Beverages', item: '', beo: '', prov: '', src: '', status: 'To order', by: '' }); touch(); renderOrders(); };
+$('ordCopy').onclick = async () => { try { await navigator.clipboard.writeText(ordTsv()); $('ordHint').textContent = 'Copied - paste into an email or Excel.'; } catch (x) { prompt('Copy this (Ctrl/Cmd+C):', ordTsv()); } };
 $('labPrint').onclick = () => printLabels(false); $('labTest').onclick = () => printLabels(true);
 $('copyPans').onclick = async () => { const tsv = buffetPanTsv(work); try { await navigator.clipboard.writeText(tsv); $('copyHint').textContent = 'Copied - paste into Excel.'; } catch (x) { prompt('Copy this (Ctrl/Cmd+C):', tsv); } };
 function applyLayers() {
-  [['drawing', 'secDrawing'], ['list', 'secList'], ['pans', 'secPans'], ['captain', 'secCaptain'], ['labels', 'secLabels']].forEach(([k, id]) => $(id).classList.toggle('off', !layers[k]));
+  [['build', 'secDrawing'], ['build', 'secList'], ['pans', 'secPans'], ['orders', 'secOrders'], ['captain', 'secCaptain'], ['labels', 'secLabels']].forEach(([k, id]) => $(id).classList.toggle('off', !layers[k]));
   document.querySelectorAll('.toggle').forEach(el => el.classList.toggle('on', !!layers[el.dataset.layer]));
+  $('emptyHint').style.display = Object.values(layers).some(Boolean) ? 'none' : '';
+  if (layers.build) { drawCanvas(); renderKey(); }
+  if (layers.pans) renderPanTable();
+  if (layers.orders) renderOrders();
   if (layers.labels) { renderLabelBox(); if (document.fonts && document.fonts.load) document.fonts.load('800 40px Nunito').then(() => { if (layers.labels) renderLabelBox(); }); }
 }
-document.querySelectorAll('.toggle').forEach(el => { el.onclick = () => { layers[el.dataset.layer] = !layers[el.dataset.layer]; try { localStorage.setItem(LAYER_KEY, JSON.stringify(layers)); } catch (x) {} applyLayers(); }; });
+document.querySelectorAll('.toggle').forEach(el => { el.onclick = () => { layers[el.dataset.layer] = !layers[el.dataset.layer]; applyLayers(); }; });
 applyLayers();
 $('saved').onchange = ev => { if (ev.target.value) openId(ev.target.value); };
 $('btnDel').onclick = () => { const id = db.current; if (!id || !db.layouts[id]) return; if (!confirm('Delete "' + label(id) + '" from this computer?')) return; delete db.layouts[id]; db.current = null; persist(); startNew(); fillSaved(); };
-buffetInstallCss(); loadDb(); fillSaved();
-const last = Object.keys(db.layouts).sort((a, b) => db.layouts[b].updated - db.layouts[a].updated)[0];
-if (last) openId(last); else startNew();
+buffetInstallCss(); loadDb(); fillSaved(); startNew(); loadCompass();
 </script>
 <script src="password-gate.js"></script>
 </body></html>
