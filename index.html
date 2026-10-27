@@ -1193,6 +1193,8 @@
     print-color-adjust: exact;
   }
 
+  .print-day-head { display: none; }
+
   /* --- Print: one landscape page --- */
   @media print {
     /* margin: 0 on @page removes the space Chrome/Safari/Firefox use to print their own
@@ -1208,6 +1210,18 @@
     .subtitle { color: #555; margin-bottom: 12px; }
     .slider-wrap, .layer-toggles, .tooltip, .no-print-hide, .cr-btn { display: none !important; }
     .day-tabs { display: none !important; }
+    /* Paper copies carry no app name. */
+    h1.brand { display: none !important; }
+    /* "Print this view": one page, one day. Day + date heading, a legend of only the groups on that day, then the timeline.
+       The range subtitle, full legend, 'time now' snapshot and an all-clear conflicts panel stay on screen only. */
+    .print-day-head { display: none; }
+    body.print-day .print-day-head { display: block; margin: 0 0 6px; }
+    body.print-day .pdh-title { font-size: 16px; font-weight: 700; color: #141a21; }
+    body.print-day .pdh-legend { display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: 8px; color: #444; margin-top: 3px; }
+    body.print-day .pdh-legend i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 3px; }
+    body.print-day #dateRangeSubtitle, body.print-day #groupLegend, body.print-day .snapshot,
+    body.print-day .conflicts-panel.is-clear { display: none !important; }
+    body.print-day .room-row { margin-bottom: 3px; }
     .snapshot { background: #e8eef3; border: 1px solid #a8b8c5; border-left: 3px solid var(--gold); padding: 8px 14px; margin-bottom: 12px; }
     .snapshot .time-readout { color: #141a21; font-size: 16px; }
     .snapshot-item { color: #444; }
@@ -1285,9 +1299,10 @@
 
 <h1 class="brand">Ncompass</h1>
 <div class="subtitle" id="dateRangeSubtitle"></div>
+<div class="print-day-head" id="printDayHead"></div>
 
 <div style="margin-bottom: 16px;" class="no-print-hide">
-  <button onclick="window.print()" style="background:var(--surface-raised); color:var(--gold-bright); border:1px solid var(--gold); padding:8px 18px; border-radius:20px; font-size:12px; cursor:pointer;">🖨 <span data-i18n="print_view">Print this view (one landscape page)</span></button>
+  <button onclick="printDayView()" style="background:var(--surface-raised); color:var(--gold-bright); border:1px solid var(--gold); padding:8px 18px; border-radius:20px; font-size:12px; cursor:pointer;">🖨 <span data-i18n="print_view">Print this view (one landscape page)</span></button>
   <button id="printRunSheetBtn" style="background:var(--surface-raised); color:var(--gold-bright); border:1px solid var(--gold); padding:8px 18px; border-radius:20px; font-size:12px; cursor:pointer; margin-left:10px;">🖨 <span data-i18n="print_runsheet">Print run sheet (day view)</span></button>
   <button id="allNotesBtn" style="background:var(--surface-raised); color:var(--gold-bright); border:1px solid var(--gold); padding:8px 18px; border-radius:20px; font-size:12px; cursor:pointer; margin-left:10px;">✉ <span data-i18n="all_notes_btn">All Notes</span></button>
   <button id="monthViewToggleBtn" style="background:var(--surface-raised); color:var(--gold-bright); border:1px solid var(--gold); padding:8px 18px; border-radius:20px; font-size:12px; cursor:pointer; margin-left:10px;">📅 <span data-i18n="month_view_btn">Month View</span></button>
@@ -3739,7 +3754,25 @@ document.getElementById('runSheetPrintBtn').addEventListener('click', () => {
 });
 window.addEventListener('afterprint', () => {
   document.body.classList.remove('print-runsheet');
+  document.body.classList.remove('print-day');
+  const tc = document.querySelector('.timeline-container'); if (tc) tc.style.zoom = '';
 });
+// "Print this view": the selected day only, on one landscape page (Month View prints as the calendar grid).
+function preparePrintDay() {
+  if (monthViewActive) return;
+  const day = activeDay(); if (!day) return;
+  const present = new Set(); day.rooms.forEach(r => r.events.forEach(e => { if (e.group) present.add(e.group); }));
+  const title = new Date(day.date + 'T12:00:00').toLocaleDateString(LANG === 'es' ? 'es-US' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  document.getElementById('printDayHead').innerHTML = `<div class="pdh-title">${esc(title)}</div><div class="pdh-legend">` +
+    (DATA.groups || []).filter(g => present.has(g.name)).map(g => `<span><i style="background:${g.color}"></i>${esc(g.abbr)} = ${esc(g.name)}</span>`).join('') + '</div>';
+  document.body.classList.add('print-day');
+  // fit one page: page height 8.5in less 0.7in padding, less the heading (~70px); on-screen rows carry 7px more margin than print rows
+  const tc = document.querySelector('.timeline-container'); tc.style.zoom = '';
+  const rows = tc.querySelectorAll('.room-row').length, est = tc.offsetHeight - rows * 7, avail = 7.8 * 96 - 70;
+  if (est > avail) tc.style.zoom = String(Math.max(0.55, avail / est).toFixed(3));
+}
+function printDayView() { preparePrintDay(); window.print(); }
 
 // Keep the fade, now-line, and snapshot honest if this is left open on a floor monitor —
 // including across a real midnight rollover, when TODAY itself changes underneath the page.
