@@ -1222,6 +1222,11 @@
     body.print-day #dateRangeSubtitle, body.print-day #groupLegend, body.print-day .snapshot,
     body.print-day .conflicts-panel.is-clear { display: none !important; }
     body.print-day .room-row { margin-bottom: 3px; }
+    body.print-day .conflicts-panel:not(.is-clear) { padding: 5px 10px; margin: 0 0 6px; }
+    body.print-day .conflicts-panel:not(.is-clear) h2 { font-size: 10px; margin: 0 0 3px; }
+    body.print-day .conflicts-panel:not(.is-clear) ul { margin: 0; padding-left: 14px; }
+    body.print-day .conflicts-panel:not(.is-clear) li { font-size: 8.5px; margin: 1px 0; line-height: 1.25; }
+    body.print-day .conflicts-panel:not(.is-clear) .kind-badge { font-size: 7px; padding: 1px 5px; margin-right: 6px; }
     .snapshot { background: #e8eef3; border: 1px solid #a8b8c5; border-left: 3px solid var(--gold); padding: 8px 14px; margin-bottom: 12px; }
     .snapshot .time-readout { color: #141a21; font-size: 16px; }
     .snapshot-item { color: #444; }
@@ -2644,8 +2649,48 @@ const GROUP_COLOR = {};
 const GROUP_ABBR = {};
 (DATA.groups || []).forEach(g => { GROUP_COLOR[g.name] = g.color; GROUP_ABBR[g.name] = g.abbr || g.name.charAt(0); });
 
+// Cross-group conflicts are worked out from the schedule itself (DATA.crossGroupConflicts can still add hand-entered ones):
+// two different groups in the same space at the same time = double booking; the gap between them <= TIGHT_TURNOVER_MIN = tight turnover.
+// A combined room counts as every part it contains (Windsor Ballroom = I-IV; 'Parliament I & II' = I and II; Expo likewise).
+const TIGHT_TURNOVER_MIN = 30;
+function roomParts(name) {
+  if (name === 'Windsor Ballroom') return ['W1', 'W2', 'W3', 'W4'];
+  const base = name.split(' ')[0], pre = { Windsor: 'W', Parliament: 'P', Expo: 'E' }[base];
+  const nums = { I: '1', II: '2', III: '3', IV: '4' }, m = name.match(/\b(IV|III|II|I)\b/g);
+  if (pre && m) return m.map(x => pre + nums[x]);
+  if (name === 'Parliament') return ['P1', 'P2', 'P3'];
+  return [name];
+}
+let _derivedConflicts = null;
+function derivedConflicts() {
+  if (_derivedConflicts) return _derivedConflicts;
+  const out = [], ab = g => (GROUP_ABBR[g] || g);
+  (DATA.days || []).forEach(day => {
+    const evs = [];
+    day.rooms.forEach(r => r.events.forEach(e => { if (e.group && e.liveStart != null && e.liveEnd != null) evs.push({ room: r.name, parts: roomParts(r.name), e }); }));
+    const seen = new Set();
+    for (let i = 0; i < evs.length; i++) for (let j = i + 1; j < evs.length; j++) {
+      const a = evs[i], b = evs[j];
+      if (a.e.group === b.e.group) continue;
+      const shared = a.parts.filter(p => b.parts.includes(p)); if (!shared.length) continue;
+      const [f, s] = a.e.liveStart <= b.e.liveStart ? [a, b] : [b, a];
+      const overlap = Math.min(a.e.liveEnd, b.e.liveEnd) - Math.max(a.e.liveStart, b.e.liveStart);
+      const gap = s.e.liveStart - f.e.liveEnd;
+      if (overlap <= 0 && gap > TIGHT_TURNOVER_MIN) continue;
+      const kind = overlap > 0 ? 'double-booking' : 'tight-flip';
+      const key = [kind, f.e.group, s.e.group, f.e.liveEnd, s.e.liveStart, shared.join()].join('|');
+      if (seen.has(key)) continue; seen.add(key);
+      const room = f.room === s.room ? f.room : `${f.room} / ${s.room}`;
+      const detail = overlap > 0
+        ? `${room}: ${ab(f.e.group)} ${f.e.label} (${fmtTime(f.e.liveStart)}–${fmtTime(f.e.liveEnd)}) overlaps ${ab(s.e.group)} ${s.e.label} (${fmtTime(s.e.liveStart)}–${fmtTime(s.e.liveEnd)}).`
+        : `${room}: ${ab(f.e.group)} ${f.e.label} ends ${fmtTime(f.e.liveEnd)}, then ${ab(s.e.group)} ${s.e.label} starts ${fmtTime(s.e.liveStart)} (${gap} min turnaround).`;
+      out.push({ date: day.date, kind, detail });
+    }
+  });
+  return (_derivedConflicts = out);
+}
 function conflictsForDate(date) {
-  return (DATA.crossGroupConflicts || []).filter(c => c.date === date);
+  return (DATA.crossGroupConflicts || []).concat(derivedConflicts()).filter(c => c.date === date);
 }
 
 function renderGroupLegend() {
@@ -3769,8 +3814,10 @@ function preparePrintDay() {
   document.body.classList.add('print-day');
   // fit one page: page height 8.5in less 0.7in padding, less the heading (~70px); on-screen rows carry 7px more margin than print rows
   const tc = document.querySelector('.timeline-container'); tc.style.zoom = '';
-  const rows = tc.querySelectorAll('.room-row').length, est = tc.offsetHeight - rows * 7, avail = 7.8 * 96 - 70;
-  if (est > avail) tc.style.zoom = String(Math.max(0.55, avail / est).toFixed(3));
+  const rows = tc.querySelectorAll('.room-row').length, est = tc.offsetHeight - rows * 7;
+  const cp = document.getElementById('conflictsPanel'), nConf = cp && !cp.classList.contains('is-clear') ? cp.querySelectorAll('li').length : 0;
+  const avail = 7.45 * 96 - 70 - (nConf ? nConf * 13 + 28 : 0);
+  if (est > avail) tc.style.zoom = String(Math.max(0.45, avail / est).toFixed(3));
 }
 function printDayView() { preparePrintDay(); window.print(); }
 
