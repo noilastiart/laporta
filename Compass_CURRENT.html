@@ -2853,7 +2853,7 @@ function renderDayTabs() {
 // summed (that would double-count the same people across simultaneous
 // breakouts) -- the peak (max) Set value for that group that day is shown.
 let monthViewActive = false;
-let monthViewYear = 2026, monthViewMonth = 10; // opens on October; arrows move through the months in DATA
+let monthViewYear = Number(DATA.days[0].date.slice(0, 4)), monthViewMonth = Number(DATA.days[0].date.slice(5, 7)); // opens on the first month in DATA; arrows move through the months in DATA
 function monthKeysWithData() {
   return [...new Set((DATA.days || []).map(d => d.date.slice(0, 7)))].sort();
 }
