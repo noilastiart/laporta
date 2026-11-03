@@ -188,6 +188,11 @@ def main():
               f'Compass as it stood when this month was closed ({datetime.now().strftime("%Y-%m-%d")}). Not updated.</div>')
     snap_head = snap_head.replace('<h1 class="brand">Ncompass</h1>', banner + '\n<h1 class="brand">Ncompass</h1>', 1)
     snap_tail = set_month_consts(tail, y, mo)
+    # the app code now sits AFTER the DATA line (in the tail), so asset paths must be fixed there too
+    for a, b in (('<script src="password-gate.js"></script>', '<script src="../password-gate.js"></script>'),
+                 ("diagrams/${key}.png", "../diagrams/${key}.png"),
+                 ('href="buffet.html"', 'href="../buffet.html"')):
+        snap_tail = snap_tail.replace(a, b)
     open(snap_path, "w", encoding="utf-8").write(snap_head + dump(snap) + snap_tail)
 
     # ----- live page -----
