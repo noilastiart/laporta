@@ -1298,6 +1298,33 @@
     body.print-runsheet .flags-panel,
     body.print-runsheet .brand { display: none !important; }
   }
+
+  /* ---- Crew setup plan: the crew's own intended build window, drawn over the paper (BEO) window.
+     Saved in this browser only. Never edits the BEO data. ---- */
+  .plan-region { position:absolute; z-index:6; top:1px; bottom:1px; box-sizing:border-box; border:2px dashed var(--amber); background:#d9a44112;
+    border-radius:3px; pointer-events:none; display:flex; align-items:center; overflow:hidden; font-size:10px; font-weight:700; color:var(--amber); white-space:nowrap; touch-action:none; }
+  .plan-region .plan-label { position:absolute; left:12px; bottom:0; padding:0 6px; background:var(--amber); color:#141a21; font-size:9px; line-height:13px; border-radius:3px 3px 0 0; pointer-events:none; max-width:calc(100% - 24px); overflow:hidden; text-overflow:ellipsis; }
+  .plan-region.stale .plan-label { background:var(--red); color:#fff; }
+  .plan-region.stale { border-color:var(--red); color:#ff9caa; background:#b0455a24; }
+  .plan-region .plan-h { position:absolute; top:0; bottom:0; width:10px; background:#d9a441aa; cursor:ew-resize; display:none; }
+  .plan-region .plan-h.l { left:0; } .plan-region .plan-h.r { right:0; }
+  .plan-region .plan-x { position:absolute; right:12px; top:50%; transform:translateY(-50%); width:16px; height:16px; line-height:14px; text-align:center; border-radius:8px; background:#0008; color:#fff; cursor:pointer; display:none; font-size:11px; }
+  body.plan-mode .plan-region { pointer-events:auto; cursor:grab; background:#d9a4411f; }
+  body.plan-mode .plan-region .plan-h, body.plan-mode .plan-region .plan-x { display:block; }
+  .plan-ground { position:absolute; z-index:5; top:1px; bottom:1px; box-sizing:border-box; border:1px dashed #d9a44188; background:#d9a4410f; border-radius:3px; pointer-events:none; display:none; }
+  body.plan-mode .plan-ground { display:flex; align-items:center; }
+  .plan-ground .plan-add { pointer-events:auto; margin-left:3px; width:18px; height:18px; padding:0; line-height:16px; text-align:center; border-radius:9px; border:1px solid var(--amber); background:#232c38; color:var(--amber); font-size:13px; font-weight:700; cursor:pointer; }
+  #planModeBtn.on { background:var(--amber) !important; color:#141a21 !important; border-color:var(--amber) !important; }
+  .plan-hint { display:none; font-size:12px; color:var(--amber); margin:0 0 10px 0; }
+  body.plan-mode .plan-hint { display:block; }
+  .run-sheet-plan .run-sheet-notes-label { color:#8a5a00; }
+  @media print {
+    .plan-region { background:#fff1cf66 !important; border-color:#b07a00 !important; }
+    .plan-region .plan-label { background:#b07a00 !important; color:#fff !important; }
+    .plan-region.stale { border-color:#b0455a !important; }
+    .plan-region.stale .plan-label { background:#b0455a !important; }
+    .plan-hint { display:none !important; }
+  }
 </style>
 </head>
 <body>
@@ -1312,6 +1339,7 @@
   <button id="allNotesBtn" style="background:var(--surface-raised); color:var(--gold-bright); border:1px solid var(--gold); padding:8px 18px; border-radius:20px; font-size:12px; cursor:pointer; margin-left:10px;">✉ <span data-i18n="all_notes_btn">All Notes</span></button>
   <button id="monthViewToggleBtn" style="background:var(--surface-raised); color:var(--gold-bright); border:1px solid var(--gold); padding:8px 18px; border-radius:20px; font-size:12px; cursor:pointer; margin-left:10px;">📅 <span data-i18n="month_view_btn">Month View</span></button>
   <button id="buffetBuilderBtn" style="background:var(--surface-raised); color:var(--gold-bright); border:1px solid var(--gold); padding:8px 18px; border-radius:20px; font-size:12px; cursor:pointer; margin-left:10px;">🍴 <span data-i18n="buffet_builder_btn">Buffet builder</span></button>
+  <button id="planModeBtn" style="background:var(--surface-raised); color:var(--gold-bright); border:1px solid var(--gold); padding:8px 18px; border-radius:20px; font-size:12px; cursor:pointer; margin-left:10px;">✎ <span data-i18n="plan_mode_btn">Plan setup</span></button>
   <select id="runSheetGroupFilter" style="margin-left:10px; background:var(--surface-raised); color:var(--text); border:1px solid var(--line); border-radius:14px; padding:7px 10px; font-size:12px;">
     <option value="" data-i18n="runsheet_all_groups">All groups (default)</option>
   </select>
@@ -1323,6 +1351,7 @@
 </div>
 
 <div class="day-tabs no-print-hide" id="dayTabs"></div>
+<div class="plan-hint no-print-hide" data-i18n="plan_hint">Plan setup: on any Setup or Flip row, press + to plan when your crew will really build it, then drag the amber bar or its ends. The paper (BEO) time never changes. Saved in this browser only.</div>
 
 <div class="month-view" id="monthViewContainer" style="display:none;"></div>
 
@@ -1347,6 +1376,7 @@
   <div class="layer-toggle active" data-layer="diagram"><span class="swatch swatch-icon">⛶</span> <span data-i18n="layer_diagrams">Diagrams</span></div>
   <div class="layer-toggle active" data-layer="evening-setup"><span class="swatch swatch-icon" style="color:var(--amber)">◐</span> <span data-i18n="layer_evening">Evening Setup</span></div>
   <div class="layer-toggle active" data-layer="notes"><span class="swatch swatch-icon">✉</span> <span data-i18n="layer_notes">Notes</span></div>
+  <div class="layer-toggle active" data-layer="plan"><span class="swatch" style="background:#d9a44140; border:2px dashed var(--amber); box-sizing:border-box;"></span> <span data-i18n="layer_plan">Crew plan</span></div>
   <div class="layer-toggle active" data-layer="amenities"><span class="swatch swatch-icon">★</span> <span data-i18n="layer_amenities">VIP Amenities</span></div>
   <div class="print-hint" data-i18n="print_hint">Toggle layers to isolate what you need to share or print</div>
 </div>
@@ -1869,6 +1899,18 @@ const I18N = {
     layer_diagrams: "Diagrams",
     layer_evening: "Evening Setup",
     layer_notes: "Notes",
+    layer_plan: "Crew plan",
+    plan_mode_btn: "Plan setup",
+    plan_hint: "Plan setup: on any Setup or Flip row, press + to plan when your crew will really build it, then drag the amber bar or its ends. The paper (BEO) time never changes. Saved in this browser only.",
+    plan_label: "Plan",
+    plan_stale_label: "Plan (older BEO)",
+    plan_ground_tip: "Free to plan: {a} to {b}",
+    plan_add_tip: "Plan when the crew will build this",
+    plan_remove_tip: "Remove this plan",
+    plan_region_tip: "BEO says {os} – {oe}. Crew plan: {ps} – {pe}.",
+    plan_stale_tip: "The BEO changed after this plan was made -- check it.",
+    runsheet_plan_label: "Crew plan",
+    runsheet_plan_text: "Set {s} – {e} (BEO says {os} – {oe})",
     print_hint: "Toggle layers to isolate what you need to share or print",
     legend_flip_tight: "Flip too tight",
     legend_past: "Already past (live clock)",
@@ -1975,6 +2017,18 @@ const I18N = {
     layer_diagrams: "Diagramas",
     layer_evening: "Montaje nocturno",
     layer_notes: "Notas",
+    layer_plan: "Plan del equipo",
+    plan_mode_btn: "Planificar montaje",
+    plan_hint: "Planificar montaje: en cualquier fila de Montaje o Cambio, pulse + para planificar cuándo lo montará realmente el equipo y arrastre la barra ámbar o sus extremos. La hora de la BEO nunca cambia. Se guarda solo en este navegador.",
+    plan_label: "Plan",
+    plan_stale_label: "Plan (BEO anterior)",
+    plan_ground_tip: "Disponible para planificar: {a} a {b}",
+    plan_add_tip: "Planificar cuándo montará el equipo",
+    plan_remove_tip: "Quitar este plan",
+    plan_region_tip: "La BEO dice {os} – {oe}. Plan del equipo: {ps} – {pe}.",
+    plan_stale_tip: "La BEO cambió después de hacer este plan: revíselo.",
+    runsheet_plan_label: "Plan del equipo",
+    runsheet_plan_text: "Montar {s} – {e} (la BEO dice {os} – {oe})",
     print_hint: "Active o desactive capas para aislar lo que necesite compartir o imprimir",
     legend_flip_tight: "Transición muy ajustada",
     legend_past: "Ya pasado (reloj en vivo)",
@@ -3299,6 +3353,89 @@ function liveBlockNeed(ev) {
   return { lead, lab };
 }
 let PX_PER_MIN = 1.4;
+// ---- Crew setup plan (this browser only) -------------------------------------------------
+// A plan is the crew's own intended build window for a Setup/Flip row, drawn over the paper window. The BEO
+// data is never edited. A plan remembers a fingerprint of the BEO row it was made on; if the paper changes
+// afterwards the plan is shown in red as "made on an older version".
+const PLAN_KEY = 'ncompass_setup_plans_v1';
+let PLANS = {};
+try { PLANS = JSON.parse(localStorage.getItem(PLAN_KEY) || '{}') || {}; } catch (e) { PLANS = {}; }
+function savePlans() { try { localStorage.setItem(PLAN_KEY, JSON.stringify(PLANS)); } catch (e) {} }
+function isPlannable(ev) { return ev.liveStart != null && ev.liveEnd != null && /set[- ]?up|flip/i.test(ev.label || ''); }
+function planKey(date, roomName, ev) { return [date, roomName, ev.beoNumber, ev.label].join('|'); }
+function planSig(ev) {
+  const s = [ev.liveStart, ev.liveEnd, ev.gtd, ev.set, ev.setupNotes].join('~'); let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0).toString(36);
+}
+// Earliest minute the crew could start: when the latest earlier event in this room finishes.
+function planGround(room, ev) {
+  let lo = DAY_START;
+  room.events.forEach(o => { if (o !== ev && o.liveEnd != null && o.liveStart != null && o.liveStart < ev.liveStart) lo = Math.max(lo, Math.min(o.liveEnd, ev.liveStart)); });
+  return lo;
+}
+function planLabelText(p, stale) { return (stale ? t('plan_stale_label') : t('plan_label')) + ' ' + fmtTime(p.s) + ' – ' + fmtTime(p.e); }
+function addPlanLayer(track, room, day) {
+  room.events.forEach(ev => {
+    if (!isPlannable(ev)) return;
+    const key = planKey(day.date, room.name, ev), p = PLANS[key];
+    const lo = planGround(room, ev), hi = ev.liveEnd;
+    if (!p) {
+      if (lo >= hi) return;
+      const g = document.createElement('div');
+      g.className = 'plan-ground no-print-hide';
+      g.style.left = pct(lo) + '%'; g.style.width = Math.max(pct(hi) - pct(lo), 0.3) + '%';
+      g.title = t('plan_ground_tip', { a: fmtTime(lo), b: fmtTime(hi) });
+      const b = document.createElement('button');
+      b.className = 'plan-add'; b.textContent = '+'; b.title = t('plan_add_tip');
+      b.addEventListener('click', e => { e.stopPropagation(); PLANS[key] = { s: ev.liveStart, e: ev.liveEnd, sig: planSig(ev) }; savePlans(); renderRooms(); });
+      g.appendChild(b); track.appendChild(g); return;
+    }
+    const stale = p.sig !== planSig(ev);
+    const r = document.createElement('div');
+    r.className = 'plan-region' + (stale ? ' stale' : '');
+    r.dataset.layer = 'plan';
+    const paint = () => {
+      r.style.left = pct(p.s) + '%'; r.style.width = Math.max(pct(p.e) - pct(p.s), 0.3) + '%';
+      lab.textContent = planLabelText(p, stale);
+      r.title = t('plan_region_tip', { os: fmtTime(ev.liveStart), oe: fmtTime(ev.liveEnd), ps: fmtTime(p.s), pe: fmtTime(p.e) }) + (stale ? ' ' + t('plan_stale_tip') : '');
+    };
+    const lab = document.createElement('span'); lab.className = 'plan-label'; r.appendChild(lab);
+    ['l', 'r'].forEach(k => { const h = document.createElement('div'); h.className = 'plan-h ' + k; h.dataset.mode = k; r.appendChild(h); });
+    const x = document.createElement('div'); x.className = 'plan-x no-print-hide'; x.textContent = '×'; x.title = t('plan_remove_tip');
+    x.addEventListener('pointerdown', e => e.stopPropagation());
+    x.addEventListener('click', e => { e.stopPropagation(); delete PLANS[key]; savePlans(); renderRooms(); });
+    r.appendChild(x);
+    r.addEventListener('pointerdown', e => {
+      if (!document.body.classList.contains('plan-mode') || e.target === x) return;
+      e.preventDefault(); e.stopPropagation();
+      const mode = e.target.dataset && e.target.dataset.mode ? e.target.dataset.mode : 'move';
+      const rect = track.getBoundingClientRect(), mpp = (DAY_END - DAY_START) / rect.width, x0 = e.clientX, s0 = p.s, e0 = p.e;
+      const move = m => {
+        let d = Math.round(((m.clientX - x0) * mpp) / 15) * 15;
+        if (mode === 'move') { d = Math.max(lo - s0, Math.min(hi - e0, d)); p.s = s0 + d; p.e = e0 + d; }
+        else if (mode === 'l') { p.s = Math.max(lo, Math.min(e0 - 15, s0 + d)); }
+        else { p.e = Math.min(hi, Math.max(s0 + 15, e0 + d)); }
+        p.sig = planSig(ev);
+        paint();
+      };
+      const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); savePlans(); renderRooms(); };
+      window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+    });
+    paint(); track.appendChild(r);
+  });
+}
+function planRunSheetHtml(date, roomName, ev) {
+  const p = PLANS[planKey(date, roomName, ev)];
+  if (!p || !activeLayers.has('plan')) return '';
+  const stale = p.sig !== planSig(ev);
+  return `<div class="run-sheet-notes run-sheet-plan"><span class="run-sheet-notes-label">${t('runsheet_plan_label')}</span>${t('runsheet_plan_text', { s: fmtTime(p.s), e: fmtTime(p.e), os: fmtTime(ev.liveStart), oe: fmtTime(ev.liveEnd) })}${stale ? ' ⚠ ' + t('plan_stale_tip') : ''}</div>`;
+}
+document.getElementById('planModeBtn').addEventListener('click', () => {
+  const on = document.body.classList.toggle('plan-mode');
+  document.getElementById('planModeBtn').classList.toggle('on', on);
+});
+
 function renderRooms() {
   roomRowsEl.innerHTML = '';
   const day = activeDay();
@@ -3502,6 +3639,7 @@ function renderRooms() {
       });
     });
 
+    addPlanLayer(track, room, day);
     row.appendChild(track);
     roomRowsEl.appendChild(row);
   });
@@ -3591,7 +3729,7 @@ function update() {
 
 slider.addEventListener('input', update);
 
-const activeLayers = new Set(['banquet', 'av', 'live', 'flip', 'diagram', 'evening-setup', 'notes', 'amenities']);
+const activeLayers = new Set(['banquet', 'av', 'live', 'flip', 'diagram', 'evening-setup', 'notes', 'amenities', 'plan']);
 document.querySelectorAll('.layer-toggle').forEach(toggle => {
   toggle.addEventListener('click', () => {
     const layer = toggle.dataset.layer;
@@ -3618,6 +3756,7 @@ function applyLayerFilter() {
   document.querySelectorAll('.evening-setup-badge').forEach(badge => {
     badge.style.display = showEvening ? '' : 'none';
   });
+  document.querySelectorAll('.plan-region').forEach(r => { r.style.display = activeLayers.has('plan') ? '' : 'none'; });
   const showNotes = activeLayers.has('notes');
   document.querySelectorAll('.note-badge').forEach(badge => {
     badge.style.display = showNotes ? '' : 'none';
@@ -3741,7 +3880,7 @@ function renderRunSheet(groupFilter) {
           <span>${revTag}${td(ev.label)}${ev.group ? ` — ${ev.group}` : ''}${setChip}<button class="cr-btn no-print-hide" title="${t('captain_btn')}" data-date="${day.date}" data-room="${room.name.replace(/"/g, '&quot;')}" data-beo="${ev.beoNumber || ''}" data-label="${(ev.label || '').replace(/"/g, '&quot;')}" onclick="printCaptainForCard(this)">🧾</button></span>
           <span class="run-sheet-time">${runSheetTimeRange(ev)}</span>
         </div>
-        ${setupHtml}${eventHtml}${avHtml}
+        ${planRunSheetHtml(day.date, room.name, ev)}${setupHtml}${eventHtml}${avHtml}
       </div>`;
     }).join('');
     return `<div class="run-sheet-room"><div class="run-sheet-room-name">${room.name}</div>${eventsHtml}</div>`;
