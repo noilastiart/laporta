@@ -1065,6 +1065,12 @@
   .run-sheet-event.rs-green { border-left-color: #2f6650; background: #eef6f1; }
   .run-sheet-event.rs-blue { border-left-color: #3a6b8a; background: #eaf1f6; }
   .run-sheet-event.rs-rev { border-left-color: #b8323a; background: #fdecee; }
+  /* Meals jump out of the run sheet: thick orange edge, warm tint, big MEAL badge. Breaks get a lighter version. */
+  .run-sheet-event.rs-meal { border-left-width: 10px; border-left-color: #c2570a; border-color: #e0a15f; background: #fff1de; }
+  .run-sheet-event.rs-meal .run-sheet-event-head { font-size: 12.5px; }
+  .run-sheet-event.rs-break { border-left-width: 7px; border-left-color: #d9822b; background: #fffaf2; }
+  .rs-meal-badge { display: inline-block; background: #c2570a; color: #fff; font-weight: 800; font-size: 10.5px; letter-spacing: .7px; padding: 1px 7px; border-radius: 3px; margin-right: 7px; vertical-align: 1px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .rs-meal-badge.rs-break-badge { background: #fff; color: #c2570a; border: 1.5px solid #c2570a; padding: 0 6px; font-size: 9.5px; }
   .run-sheet-event-head { display: flex; justify-content: space-between; gap: 8px; font-weight: 700; font-size: 10.5px; }
   .run-sheet-time { font-weight: 400; color: #555; }
   .run-sheet-set-chip { display: inline-block; border: 1px solid #a8b8c5; border-radius: 8px; padding: 0 5px; font-size: 9px; color: #444; margin-left: 5px; font-weight: 400; }
@@ -1978,6 +1984,8 @@ const I18N = {
     runsheet_set_chip: "Set {n}",
     runsheet_setup_label: "Setup:",
     runsheet_event_label: "Event:",
+    runsheet_meal_badge: "🍽 MEAL",
+    runsheet_break_badge: "BREAK",
     runsheet_av_label: "AV:",
     runsheet_no_av: "No AV",
     runsheet_heading: "Run Sheet",
@@ -2096,6 +2104,8 @@ const I18N = {
     runsheet_set_chip: "Armado: {n}",
     runsheet_setup_label: "Montaje:",
     runsheet_event_label: "Evento:",
+    runsheet_meal_badge: "🍽 COMIDA",
+    runsheet_break_badge: "DESCANSO",
     runsheet_av_label: "AV:",
     runsheet_no_av: "Sin AV",
     runsheet_heading: "Hoja de Ruta",
@@ -3793,6 +3803,21 @@ function runSheetSetupClass(ev) {
   return ev.banquetStart != null ? 'rs-green' : 'rs-blue';
 }
 
+// Meals (and breaks) get an obvious badge + colour on the run sheet. Setup/flip/hold/walk-through style rows never count.
+const RS_EXCL = /set[ -]?up|flip|storage|room hold|\bhold\b|load[ -]?in|walk[ -]?through|registration|tear[ -]?down|air ?walls?|key card|arrival|security|cash bar|meal room|amenit|exhibition|trade show|beverage station/i;
+const RS_MEAL = /breakfast|lunch|dinner|brunch|snack|buffet|reception|\bmeal\b|banquet|pre-?game|concession|supper|tasting|continental|nutrition station|to-?go|hors|dessert/i;
+const RS_BREAK = /\bbreaks?\b|refreshment|coffee/i;
+const RS_FOOD = /serve time|\(\d+\s*(ppl|people)\)|\d+\s*(ppl|people)\b|buffet|sandwich|salad|pasta|entree|entr\u00e9e|filet|chicken|pizza|soup|breakfast|lunch|dinner/i;
+function runSheetMealKind(ev) {
+  if (ev.liveStart == null) return '';
+  const lab = ev.label || '';
+  if (RS_EXCL.test(lab)) return '';
+  if (RS_MEAL.test(lab)) return 'meal';
+  if (RS_BREAK.test(lab)) return 'break';
+  const n = ev.eventNotes || '';
+  return (n.length > 120 && RS_FOOD.test(n)) ? 'meal' : '';
+}
+
 function runSheetSortKey(ev) {
   const bands = eventActiveBands(ev);
   if (bands.length) return Math.min(...bands.map(b => b.start));
@@ -3875,9 +3900,11 @@ function renderRunSheet(groupFilter) {
             ? `<div class="run-sheet-notes"><span class="run-sheet-notes-label">${t('runsheet_av_label')}</span>${avNotesHtml(ev)}</div>`
             : `<div class="run-sheet-notes run-sheet-av-none"><span class="run-sheet-notes-label">${t('runsheet_av_label')}</span>${t('runsheet_no_av')}</div>`)
         : '';
-      return `<div class="run-sheet-event ${runSheetSetupClass(ev)}">
+      const mealKind = runSheetMealKind(ev);
+      const mealBadge = mealKind === 'meal' ? `<span class="rs-meal-badge">${t('runsheet_meal_badge')}</span>` : mealKind === 'break' ? `<span class="rs-meal-badge rs-break-badge">${t('runsheet_break_badge')}</span>` : '';
+      return `<div class="run-sheet-event ${runSheetSetupClass(ev)}${mealKind ? ' rs-' + mealKind : ''}">
         <div class="run-sheet-event-head">
-          <span>${revTag}${td(ev.label)}${ev.group ? ` — ${ev.group}` : ''}${setChip}<button class="cr-btn no-print-hide" title="${t('captain_btn')}" data-date="${day.date}" data-room="${room.name.replace(/"/g, '&quot;')}" data-beo="${ev.beoNumber || ''}" data-label="${(ev.label || '').replace(/"/g, '&quot;')}" onclick="printCaptainForCard(this)">🧾</button></span>
+          <span>${mealBadge}${revTag}${td(ev.label)}${ev.group ? ` — ${ev.group}` : ''}${setChip}<button class="cr-btn no-print-hide" title="${t('captain_btn')}" data-date="${day.date}" data-room="${room.name.replace(/"/g, '&quot;')}" data-beo="${ev.beoNumber || ''}" data-label="${(ev.label || '').replace(/"/g, '&quot;')}" onclick="printCaptainForCard(this)">🧾</button></span>
           <span class="run-sheet-time">${runSheetTimeRange(ev)}</span>
         </div>
         ${planRunSheetHtml(day.date, room.name, ev)}${setupHtml}${eventHtml}${avHtml}
